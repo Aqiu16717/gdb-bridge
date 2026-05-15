@@ -23,3 +23,13 @@ Thumbs.db
 # macOS debug symbols
 *.dSYM/
 *.dSYM
+
+# Compiled test fixtures
+tests/fixtures/*_test
+
+# Build artifacts
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
