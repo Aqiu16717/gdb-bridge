@@ -84,6 +84,13 @@ class Frame(BaseModel):
     address: str | None = Field(None, description="Frame address")
 
 
+class EvaluateRequest(BaseModel):
+    """Request to evaluate an expression."""
+
+    expression: str = Field(..., description="Expression to evaluate")
+    frame: int = Field(0, description="Frame index (0 = current)")
+
+
 class EvaluationResult(BaseModel):
     """Result of expression evaluation."""
 

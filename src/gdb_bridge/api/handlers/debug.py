@@ -8,6 +8,7 @@ from gdb_bridge.core.session_manager import SessionManager
 from gdb_bridge.models.debug import (
     Breakpoint,
     CreateBreakpointRequest,
+    EvaluateRequest,
     EvaluationResult,
     StepType,
     StopEvent,
@@ -122,7 +123,7 @@ def create_debug_router(session_manager: SessionManager) -> APIRouter:
                 type=result.type,
             )
         except EvaluationError:
-            raise SessionNotFoundError(session_id) from None
+            raise SessionNotFoundError(session_id, message=f"Variable '{{name}}' not found") from None
 
     @debug_router.get(
         "/sessions/{session_id}/frames",
@@ -141,11 +142,10 @@ def create_debug_router(session_manager: SessionManager) -> APIRouter:
     )
     async def evaluate_expression(
         session_id: str,
-        body: dict,
+        request: EvaluateRequest,
     ) -> EvaluationResult:
         """Evaluate an expression in the current context."""
         gdb_service = session_manager.get_gdb_service(session_id)
-        expression = body.get("expression", "")
-        return await gdb_service.evaluate_expression(expression)
+        return await gdb_service.evaluate_expression(request.expression)
 
     return debug_router

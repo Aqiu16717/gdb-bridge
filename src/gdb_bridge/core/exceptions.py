@@ -31,16 +31,18 @@ class GDBBridgeException(Exception):
 
 
 class SessionNotFoundError(GDBBridgeException):
-    """Session not found."""
+    """Session or resource not found."""
 
-    def __init__(self, session_id: str) -> None:
+    def __init__(self, session_id: str, message: str | None = None) -> None:
         """Initialize exception.
 
         Args:
-            session_id: Session ID that was not found
+            session_id: Session ID for the context
+            message: Optional custom error message
         """
+        msg = message or f"Session not found: {session_id}"
         super().__init__(
-            message=f"Session not found: {session_id}",
+            message=msg,
             error_code=ErrorCode.SESSION_NOT_FOUND,
             status_code=404,
             details={"session_id": session_id},
