@@ -10,6 +10,7 @@ from gdb_bridge.models.session import (
 from gdb_bridge.models.debug import (
     Breakpoint,
     CreateBreakpointRequest,
+    EvaluateRequest,
     EvaluationResult,
     Frame,
     Location,
@@ -30,6 +31,7 @@ __all__ = [
     # Debug models
     "Breakpoint",
     "CreateBreakpointRequest",
+    "EvaluateRequest",
     "EvaluationResult",
     "Frame",
     "Location",

@@ -59,7 +59,7 @@ class Session(BaseModel):
                     "session_id": "sess_abc123",
                     "status": "stopped",
                     "target_pid": 12345,
-                    "created_at": "2024-01-15T10:30:00Z",
+                    "created_at": "2026-05-15T10:30:00Z",
                     "stopped_at": {
                         "file": "main.c",
                         "line": 42,
