@@ -6,7 +6,14 @@ An Agent-friendly GDB debugging middleware that lets AI Agents control GDB throu
 
 ## Status
 
+**Phase 2 P1** — REST + MCP dual protocol, 97 tests, 3 backends (GDB/LLDB/Mock)
+
+
 **MVP delivered** — 10 REST endpoints, 80+ tests passing, merged to main.
+
+**LLDB PoC verified** — macOS native debugger, zero config, 4/4 acceptance criteria passed.
+
+**Phase 2 started** — DebuggerAdapter abstraction, LLDB integration, production-grade C++ test fixtures.
 
 ## Quick Start
 
@@ -47,7 +54,7 @@ Agent (Claude/Copilot) → HTTP REST → gdb-bridge → GDB/MI → Target
 | Layer | Module | Description |
 |-------|--------|-------------|
 | API | `src/gdb_bridge/api/` | FastAPI REST endpoints |
-| Services | `src/gdb_bridge/services/` | GDB/MI protocol wrapper |
+| Services | `src/gdb_bridge/services/` | GDB/MI + LLDB protocol wrappers |
 | Core | `src/gdb_bridge/core/` | Session manager (TTL), exceptions |
 | Models | `src/gdb_bridge/models/` | Pydantic data models |
 
@@ -95,6 +102,27 @@ gdb-bridge/
 └── pytest.ini            # Pytest configuration
 ```
 
+## Roadmap
+
+### P0 (MVP) — Complete ✅
+- [x] Session management (create, query, terminate)
+- [x] Breakpoint CRUD
+- [x] Execution control (continue, step-in/over/out)
+- [x] Variable inspection
+- [x] Call stack + expression evaluation
+
+### P1 (Phase 2) — Planned
+- [ ] `DebuggerAdapter` abstract interface (unified GDB + LLDB)
+- [ ] LLDB backend integration (macOS native, zero config)
+- [ ] MCP Server protocol support (dual REST + MCP)
+- [ ] Multi-thread debugging
+- [ ] Conditional breakpoints + watchpoints
+
+### P2 — Future
+- [ ] Remote debugging (gdbserver)
+- [ ] Core dump analysis
+- [ ] Go rewrite (high-concurrency production)
+
 ## macOS Note
 
 GDB on macOS requires code signing to run programs (ptrace restriction). Use one of:
@@ -108,7 +136,8 @@ GDB on macOS requires code signing to run programs (ptrace restriction). Use one
 
 - **Language**: Python 3.11+ with full type hints
 - **Framework**: FastAPI + Uvicorn
-- **GDB Interface**: GDB/MI via pexpect
+- **Debug Backends**: GDB (GDB/MI via pexpect) + LLDB (SB API, macOS native)
+- **Protocols**: REST API (current) + MCP Server (Phase 2)
 - **Data Validation**: Pydantic v2
 - **Testing**: pytest + pytest-asyncio + httpx
 - **CI/CD**: GitHub Actions with Docker
