@@ -99,6 +99,7 @@ gdb-bridge/
 
 GDB on macOS requires code signing to run programs (ptrace restriction). Use one of:
 
+- **LLDB PoC (macOS native)**: `/usr/bin/python3 poc/lldb_agent.py` — LLDB bundled with Xcode, zero config
 - **Mock mode**: `python3 poc/debug_agent_mock.py` (full flow, no GDB needed)
 - **Docker**: `docker-compose up --build && docker exec -it gdb-bridge bash`
 - **Linux**: Works out of the box
