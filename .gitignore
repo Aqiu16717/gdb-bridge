@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# macOS debug symbols
+*.dSYM/
+*.dSYM
+
+# Compiled test fixtures
+tests/fixtures/*_test
+
+# Build artifacts
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
