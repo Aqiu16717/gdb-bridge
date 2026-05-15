@@ -1,0 +1,545 @@
+openapi: 3.0.3
+info:
+  title: GDB-Bridge API
+  description: Agent-friendly GDB debugging interface
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
+  /sessions:
+    post:
+      summary: Create a new debugging session
+      operationId: createSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sessions/{sessionId}:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      summary: Get session status
+      operationId: getSession
+      responses:
+        '200':
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Terminate a debugging session
+      operationId: deleteSession
+      responses:
+        '200':
+          description: Session terminated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                  status:
+                    type: string
+                    example: "terminated"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/continue:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      summary: Continue execution
+      operationId: continueExecution
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                until:
+                  type: string
+                  description: Run until this location
+                  example: "main.c:50"
+      responses:
+        '200':
+          description: Execution stopped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StopEvent'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sessions/{sessionId}/step:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      summary: Step execution
+      operationId: stepExecution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [step-in, step-over, step-out]
+                  description: Type of step operation
+      responses:
+        '200':
+          description: Step completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StopEvent'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sessions/{sessionId}/breakpoints:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      summary: List all breakpoints
+      operationId: listBreakpoints
+      responses:
+        '200':
+          description: List of breakpoints
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  breakpoints:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Breakpoint'
+
+    post:
+      summary: Set a breakpoint
+      operationId: setBreakpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBreakpointRequest'
+      responses:
+        '201':
+          description: Breakpoint created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Breakpoint'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+
+  /sessions/{sessionId}/breakpoints/{breakpointId}:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: breakpointId
+        in: path
+        required: true
+        schema:
+          type: integer
+
+    delete:
+      summary: Delete a breakpoint
+      operationId: deleteBreakpoint
+      responses:
+        '204':
+          description: Breakpoint deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/variables/{name}:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      summary: Get variable value
+      operationId: getVariable
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [local, global, argument]
+        - name: frame
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Variable value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Variable'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/frames:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      summary: Get call stack
+      operationId: getFrames
+      responses:
+        '200':
+          description: Call stack frames
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  frames:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Frame'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/evaluate:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      summary: Evaluate expression
+      operationId: evaluateExpression
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - expression
+              properties:
+                expression:
+                  type: string
+                  example: "user->name[0]"
+                frame:
+                  type: integer
+                  default: 0
+      responses:
+        '200':
+          description: Expression result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+
+components:
+  schemas:
+    CreateSessionRequest:
+      type: object
+      required:
+        - target
+      properties:
+        target:
+          type: object
+          required:
+            - type
+            - path
+          properties:
+            type:
+              type: string
+              enum: [file, pid, remote]
+            path:
+              type: string
+            args:
+              type: array
+              items:
+                type: string
+            env:
+              type: object
+              additionalProperties:
+                type: string
+        gdbPath:
+          type: string
+          default: "gdb"
+        workingDir:
+          type: string
+
+    Session:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        status:
+          type: string
+          enum: [created, running, stopped, terminated]
+        targetPid:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        stoppedAt:
+          type: object
+          nullable: true
+          properties:
+            file:
+              type: string
+            line:
+              type: integer
+            function:
+              type: string
+
+    StopEvent:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "stopped"
+        reason:
+          type: string
+          enum: [breakpoint-hit, step-done, signal-received, exit, error]
+        location:
+          $ref: '#/components/schemas/Location'
+        threadId:
+          type: integer
+        signal:
+          type: string
+          nullable: true
+
+    Location:
+      type: object
+      properties:
+        file:
+          type: string
+        line:
+          type: integer
+        function:
+          type: string
+        address:
+          type: string
+
+    CreateBreakpointRequest:
+      type: object
+      required:
+        - location
+      properties:
+        location:
+          type: string
+          example: "main.c:42"
+        condition:
+          type: string
+          example: "i > 10"
+        hitCount:
+          type: integer
+          description: Break after this many hits
+
+    Breakpoint:
+      type: object
+      properties:
+        breakpointId:
+          type: integer
+        location:
+          type: string
+        enabled:
+          type: boolean
+        condition:
+          type: string
+          nullable: true
+        hitCount:
+          type: integer
+        times:
+          type: integer
+          description: Number of times hit
+
+    Variable:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: object
+            - type: array
+        address:
+          type: string
+          nullable: true
+        isOptimizedOut:
+          type: boolean
+
+    Frame:
+      type: object
+      properties:
+        level:
+          type: integer
+        function:
+          type: string
+        file:
+          type: string
+        line:
+          type: integer
+        address:
+          type: string
+
+    EvaluationResult:
+      type: object
+      properties:
+        expression:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+        type:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Permission denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unprocessable:
+      description: Unprocessable entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
