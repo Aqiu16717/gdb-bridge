@@ -175,3 +175,53 @@ class DebuggerAdapter(ABC):
             List of Frame models, with frame 0 being the innermost frame.
         """
         ...
+
+    # -- Watchpoints ----------------------------------------------------------------
+
+    @abstractmethod
+    async def set_watchpoint(
+        self,
+        expression: str,
+        watch_type: str = "write",
+    ) -> Breakpoint:
+        """Set a watchpoint (data breakpoint) on a variable or expression.
+
+        Args:
+            expression: Variable name or address expression.
+            watch_type: One of "read", "write", "access".
+
+        Returns:
+            Breakpoint model (watchpoints are a type of breakpoint).
+        """
+        ...
+
+    # -- Threads -------------------------------------------------------------------
+
+    @abstractmethod
+    async def list_threads(self) -> list[dict]:
+        """List all threads in the debugged process.
+
+        Returns:
+            List of thread info dicts with 'id', 'name', 'state', 'frame'.
+        """
+        ...
+
+    @abstractmethod
+    async def select_thread(self, thread_id: int) -> None:
+        """Select the active thread for subsequent operations.
+
+        Args:
+            thread_id: Thread ID to switch to.
+        """
+        ...
+
+    # -- Registers -----------------------------------------------------------------
+
+    @abstractmethod
+    async def get_registers(self) -> dict[str, str]:
+        """Get current register values.
+
+        Returns:
+            Dict mapping register name to hex value string.
+        """
+        ...
