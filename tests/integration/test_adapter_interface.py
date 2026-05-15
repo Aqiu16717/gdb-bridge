@@ -43,13 +43,11 @@ def get_adapter_instance(name: str, session_id: str) -> DebuggerAdapter:
 
 
 class TestAdapterContract:
-    """Verify adapter interface contract: every adapter has all 12 methods."""
+    """Verify adapter interface contract: every adapter has all 12 methods.
 
-    ADAPTERS = ["mock"]
-    GDB_XFAIL = pytest.mark.xfail(
-        reason="GDBService not yet refactored to inherit DebuggerAdapter (Phase 2 TODO)"
-    )
-    # "gdb" added back once GDBService(DebuggerAdapter) is done
+    These tests only inspect the class — no debugger process needed.
+    """
+    ADAPTERS = ["mock", "gdb"]
     # "lldb" added once LLDBService implemented
 
     @pytest.mark.parametrize("backend", ADAPTERS)
