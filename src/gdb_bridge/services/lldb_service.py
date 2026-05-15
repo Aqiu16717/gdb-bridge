@@ -13,6 +13,7 @@ from pathlib import Path
 
 from gdb_bridge.core.exceptions import GDBProcessError
 from gdb_bridge.models.debug import (
+    ThreadInfo,
     Breakpoint,
     EvaluationResult,
     Frame,
@@ -169,6 +170,29 @@ class LLDBService(DebuggerAdapter):
             expression=expression,
             value=data.get("value"),
         )
+
+
+    async def get_threads(self) -> list[ThreadInfo]:
+        response = await self._send("get_threads")
+        threads = response.get("data", {}).get("threads", [])
+        return [ThreadInfo(**t) for t in threads]
+
+    async def select_thread(self, thread_id: int) -> None:
+        await self._send("select_thread", {"thread_id": thread_id})
+
+    async def set_watchpoint(self, expression: str, watch_type: str = "write") -> Breakpoint:
+        response = await self._send("set_watchpoint", {"expression": expression, "type": watch_type})
+        data = response.get("data", {})
+        bp_id = self._next_bp_id
+        self._next_bp_id += 1
+        bp = Breakpoint(breakpoint_id=bp_id, location=f"watch:{expression}", enabled=True)
+        self._breakpoints[bp_id] = bp
+        return bp
+
+
+    async def get_registers(self) -> dict[str, str]:
+        response = await self._send("get_registers")
+        return response.get("data", {}).get("registers", {})
 
     async def get_frames(self) -> list[Frame]:
         response = await self._send("get_frames")

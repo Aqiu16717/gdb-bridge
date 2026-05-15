@@ -1,18 +1,8 @@
-"""MockAdapter — in-memory DebuggerAdapter for testing.
-
-Implements the full DebuggerAdapter interface with predictable
-responses. No real debugger required.
-"""
-from __future__ import annotations
+"""MockAdapter — in-memory DebuggerAdapter for testing."""
 
 from gdb_bridge.models.debug import (
-    Breakpoint,
-    EvaluationResult,
-    Frame,
-    Location,
-    StopEvent,
-    StopReason,
-    Variable,
+    Breakpoint, EvaluationResult, Frame, Location,
+    StopEvent, StopReason, Variable,
 )
 from gdb_bridge.models.session import CreateSessionRequest, Session, SessionStatus
 from gdb_bridge.core.exceptions import GDBProcessError
@@ -20,7 +10,6 @@ from gdb_bridge.services.debug_adapter import DebuggerAdapter
 
 
 class MockAdapter(DebuggerAdapter):
-    """In-memory mock adapter implementing full DebuggerAdapter contract."""
 
     def __init__(self, session_id: str) -> None:
         super().__init__(session_id)
@@ -37,10 +26,7 @@ class MockAdapter(DebuggerAdapter):
     async def start(self, request: CreateSessionRequest) -> Session:
         self._started = True
         self._stopped = False
-        return Session(
-            session_id=self.session_id,
-            status=SessionStatus.CREATED,
-        )
+        return Session(session_id=self.session_id, status=SessionStatus.CREATED)
 
     async def stop(self) -> None:
         self._stopped = True
@@ -52,42 +38,25 @@ class MockAdapter(DebuggerAdapter):
 
     async def run(self) -> StopEvent:
         self._check_alive()
-        return StopEvent(
-            status="stopped",
-            reason=StopReason.BREAKPOINT_HIT,
-            location=Location(file="main.c", line=self._current_line, function="main"),
-        )
+        return StopEvent(status="stopped", reason=StopReason.BREAKPOINT_HIT,
+                       location=Location(file="main.c", line=self._current_line, function="main"))
 
     async def step(self, step_type: str = "step-in") -> StopEvent:
         self._check_alive()
         self._current_line += 1
-        return StopEvent(
-            status="stopped",
-            reason=StopReason.STEP_DONE,
-            location=Location(file="main.c", line=self._current_line, function="main"),
-        )
+        return StopEvent(status="stopped", reason=StopReason.STEP_DONE,
+                       location=Location(file="main.c", line=self._current_line, function="main"))
 
     async def continue_execution(self) -> StopEvent:
         self._check_alive()
-        return StopEvent(
-            status="stopped",
-            reason=StopReason.EXIT,
-            location=Location(),
-        )
+        return StopEvent(status="stopped", reason=StopReason.EXIT, location=Location())
 
-    async def set_breakpoint(
-        self, location: str, condition: str | None = None
-    ) -> Breakpoint:
+    async def set_breakpoint(self, location: str, condition: str | None = None) -> Breakpoint:
         self._check_alive()
-        # Idempotent: return existing if already set
         for bp in self._breakpoints.values():
             if bp.location == location:
                 return bp
-        bp = Breakpoint(
-            breakpoint_id=self._next_bp_id,
-            location=location,
-            condition=condition,
-        )
+        bp = Breakpoint(breakpoint_id=self._next_bp_id, location=location, condition=condition)
         self._next_bp_id += 1
         self._breakpoints[bp.breakpoint_id] = bp
         return bp
@@ -102,9 +71,7 @@ class MockAdapter(DebuggerAdapter):
 
     async def get_current_location(self) -> Location:
         self._check_alive()
-        return Location(
-            file="main.c", line=self._current_line, function="main"
-        )
+        return Location(file="main.c", line=self._current_line, function="main")
 
     async def get_variables(self) -> list[Variable]:
         self._check_alive()
@@ -120,3 +87,21 @@ class MockAdapter(DebuggerAdapter):
             Frame(level=0, function="main", file="main.c", line=self._current_line),
             Frame(level=1, function="_start", file="crt.c", line=1),
         ]
+
+    async def get_threads(self) -> list[dict]:
+        self._check_alive()
+        return [{"id": 1, "name": "main", "state": "stopped", "frame": "main"}]
+
+    async def select_thread(self, thread_id: int) -> None:
+        self._check_alive()
+
+    async def set_watchpoint(self, expression: str, watch_type: str = "write") -> Breakpoint:
+        self._check_alive()
+        bp = Breakpoint(breakpoint_id=self._next_bp_id, location=f"watch:{expression}")
+        self._next_bp_id += 1
+        self._breakpoints[bp.breakpoint_id] = bp
+        return bp
+
+    async def get_registers(self) -> dict[str, str]:
+        self._check_alive()
+        return {"rip": "0x1000004c8", "rbp": "0x7ffeebf0"}

@@ -47,8 +47,7 @@ class TestAdapterContract:
 
     These tests only inspect the class — no debugger process needed.
     """
-    ADAPTERS = ["mock", "gdb"]
-    # "lldb" added once LLDBService implemented
+    ADAPTERS = ["mock", "gdb", "lldb"]
 
     @pytest.mark.parametrize("backend", ADAPTERS)
     def test_adapter_has_all_methods(self, backend: str) -> None:
@@ -60,6 +59,8 @@ class TestAdapterContract:
             "set_breakpoint", "delete_breakpoint", "list_breakpoints",
             "get_current_location", "get_variables",
             "evaluate_expression", "get_frames",
+            "get_threads", "select_thread",          # Thread support
+            "set_watchpoint", "get_registers",         # Watchpoints + registers
         }
         for method in abstract_methods:
             assert hasattr(adapter, method), (
@@ -318,3 +319,79 @@ class TestAdapterInspection:
         frames = await adapter.get_frames()
         assert len(frames) >= 1
         assert frames[0].function == "main"
+
+
+class TestAdapterThreads:
+    """Thread inspection tests."""
+
+    @pytest.mark.parametrize("backend", ["mock"])
+    @pytest.mark.asyncio
+    async def test_get_threads(self, backend: str) -> None:
+        """List threads returns thread info dicts."""
+        from gdb_bridge.models.session import CreateSessionRequest, Target, TargetType
+
+        adapter = get_adapter_instance(backend, "sess_thread")
+        request = CreateSessionRequest(
+            target=Target(type=TargetType.FILE, path="/tmp/test"),
+        )
+        await adapter.start(request)
+        await adapter.set_breakpoint("main")
+        await adapter.run()
+        threads = await adapter.get_threads()
+        assert len(threads) >= 1
+        assert "id" in threads[0]
+
+    @pytest.mark.parametrize("backend", ["mock"])
+    @pytest.mark.asyncio
+    async def test_select_thread(self, backend: str) -> None:
+        """Select thread does not raise."""
+        from gdb_bridge.models.session import CreateSessionRequest, Target, TargetType
+
+        adapter = get_adapter_instance(backend, "sess_tsel")
+        request = CreateSessionRequest(
+            target=Target(type=TargetType.FILE, path="/tmp/test"),
+        )
+        await adapter.start(request)
+        await adapter.set_breakpoint("main")
+        await adapter.run()
+        await adapter.select_thread(1)  # must not raise
+
+
+class TestAdapterWatchpoints:
+    """Watchpoint tests."""
+
+    @pytest.mark.parametrize("backend", ["mock"])
+    @pytest.mark.asyncio
+    async def test_set_watchpoint(self, backend: str) -> None:
+        """Set watchpoint returns Breakpoint."""
+        from gdb_bridge.models.session import CreateSessionRequest, Target, TargetType
+
+        adapter = get_adapter_instance(backend, "sess_wp")
+        request = CreateSessionRequest(
+            target=Target(type=TargetType.FILE, path="/tmp/test"),
+        )
+        await adapter.start(request)
+        bp = await adapter.set_watchpoint("x", "write")
+        assert bp.location is not None
+        assert bp.breakpoint_id > 0
+
+
+class TestAdapterRegisters:
+    """Register inspection tests."""
+
+    @pytest.mark.parametrize("backend", ["mock"])
+    @pytest.mark.asyncio
+    async def test_get_registers(self, backend: str) -> None:
+        """Get registers returns dict."""
+        from gdb_bridge.models.session import CreateSessionRequest, Target, TargetType
+
+        adapter = get_adapter_instance(backend, "sess_reg")
+        request = CreateSessionRequest(
+            target=Target(type=TargetType.FILE, path="/tmp/test"),
+        )
+        await adapter.start(request)
+        await adapter.set_breakpoint("main")
+        await adapter.run()
+        regs = await adapter.get_registers()
+        assert isinstance(regs, dict)
+        assert len(regs) >= 1

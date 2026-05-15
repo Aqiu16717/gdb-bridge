@@ -86,6 +86,22 @@ def main() -> None:
             elif method == "evaluate":
                 result = _evaluate(_get_process(process), params["expression"])
                 _write(result)
+
+            elif method == "get_threads":
+                threads = _get_threads(_get_process(process))
+                _write({"success": True, "data": {"threads": threads}})
+            elif method == "select_thread":
+                proc = _get_process(process)
+                proc.SetSelectedThreadByID(params["thread_id"])
+                _write({"success": True})
+            elif method == "set_watchpoint":
+                t = _get_target(target)
+                bp = t.BreakpointCreateByName(params["expression"])
+                bp_id = bp.GetID()
+                info = {"breakpoint_id": bp_id, "location": "watch:" + params["expression"], "enabled": True}
+                breakpoints[bp_id] = info
+                _write({"success": True, "data": info})
+
             elif method == "get_frames":
                 frames = _get_frames(_get_process(process))
                 _write({"success": True, "data": {"frames": frames}})
@@ -231,6 +247,21 @@ def _stop_event(process: lldb.SBProcess) -> dict:
 
     return {"success": True, "data": result}
 
+
+
+def _get_threads(process):
+    threads = []
+    for i in range(process.GetNumThreads()):
+        t = process.GetThreadAtIndex(i)
+        frame = t.GetSelectedFrame()
+        func = frame.GetFunctionName() if frame else None
+        threads.append({"thread_id": t.GetThreadID(), "name": t.GetName() or None, "function": func, "is_stopped": t.IsValid()})
+    return threads
+
+def _get_target(target_or_process):
+    if hasattr(target_or_process, 'GetTarget'):
+        return target_or_process.GetTarget()
+    return target_or_process
 
 def _get_process(process: lldb.SBProcess | None) -> lldb.SBProcess:
     if not process or not process.IsValid():

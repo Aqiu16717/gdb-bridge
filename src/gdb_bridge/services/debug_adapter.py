@@ -10,6 +10,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from gdb_bridge.models.debug import (
+    ThreadInfo,
     Breakpoint,
     EvaluationResult,
     Frame,
@@ -167,16 +168,28 @@ class DebuggerAdapter(ABC):
         """
         ...
 
+
+    # -- Threads ------------------------------------------------------------------
+
     @abstractmethod
-    async def get_frames(self) -> list[Frame]:
-        """Get the current call stack.
+    async def get_threads(self) -> list[ThreadInfo]:
+        """List all threads in the current process.
 
         Returns:
-            List of Frame models, with frame 0 being the innermost frame.
+            List of ThreadInfo models.
         """
         ...
 
-    # -- Watchpoints ----------------------------------------------------------------
+    @abstractmethod
+    async def select_thread(self, thread_id: int) -> None:
+        """Select a thread for subsequent operations.
+
+        Args:
+            thread_id: ID of the thread to select.
+        """
+        ...
+
+    # -- Watchpoints ---------------------------------------------------------------
 
     @abstractmethod
     async def set_watchpoint(
@@ -184,44 +197,34 @@ class DebuggerAdapter(ABC):
         expression: str,
         watch_type: str = "write",
     ) -> Breakpoint:
-        """Set a watchpoint (data breakpoint) on a variable or expression.
+        """Set a data watchpoint.
 
         Args:
-            expression: Variable name or address expression.
-            watch_type: One of "read", "write", "access".
+            expression: Expression or variable to watch.
+            watch_type: "read", "write", or "access".
 
         Returns:
-            Breakpoint model (watchpoints are a type of breakpoint).
+            Breakpoint model for the watchpoint.
         """
         ...
 
-    # -- Threads -------------------------------------------------------------------
-
-    @abstractmethod
-    async def list_threads(self) -> list[dict]:
-        """List all threads in the debugged process.
-
-        Returns:
-            List of thread info dicts with 'id', 'name', 'state', 'frame'.
-        """
         ...
 
-    @abstractmethod
-    async def select_thread(self, thread_id: int) -> None:
-        """Select the active thread for subsequent operations.
-
-        Args:
-            thread_id: Thread ID to switch to.
-        """
-        ...
-
-    # -- Registers -----------------------------------------------------------------
 
     @abstractmethod
     async def get_registers(self) -> dict[str, str]:
         """Get current register values.
 
         Returns:
-            Dict mapping register name to hex value string.
+            Dict mapping register name to hex value.
+        """
+        ...
+
+    @abstractmethod
+    async def get_frames(self) -> list[Frame]:
+        """Get the current call stack.
+
+        Returns:
+            List of Frame models, with frame 0 being the innermost frame.
         """
         ...

@@ -10,6 +10,7 @@ from gdb_bridge.core.exceptions import (
     InvalidBreakpointError,
 )
 from gdb_bridge.models.debug import (
+    ThreadInfo,
     Breakpoint,
     EvaluationResult,
     Frame,
@@ -337,6 +338,56 @@ class GDBService(DebuggerAdapter):
             expression=expression,
             value=result.result.get("value"),
         )
+
+
+    async def get_threads(self) -> list[ThreadInfo]:
+        """List all threads."""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        result = self._gdb._send_command("-thread-info")
+        if not result.success:
+            return [ThreadInfo(thread_id=1, name="main", is_stopped=True)]
+        threads_data = result.result.get("threads", [])
+        threads = []
+        for t in threads_data:
+            threads.append(ThreadInfo(
+                thread_id=int(t.get("id", 1)),
+                name=t.get("name"),
+                function=t.get("frame", {}).get("func") if "frame" in t else None,
+                is_stopped=t.get("state") == "stopped",
+            ))
+        return threads
+
+    async def select_thread(self, thread_id: int) -> None:
+        """Select a thread. GDB: -thread-select <id>"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        self._gdb._send_command(f"-thread-select {thread_id}")
+
+    async def set_watchpoint(self, expression: str, watch_type: str = "write") -> Breakpoint:
+        """Set a data watchpoint. GDB: -break-watch -a|-r <expr>"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        flag = "-a" if watch_type == "access" else "-r" if watch_type == "read" else ""
+        result = self._gdb._send_command(f"-break-watch {flag} {expression}".strip())
+        if not result.success:
+            raise InvalidBreakpointError(expression, reason=str(result.errors))
+        bp_id = self._next_bp_id
+        self._next_bp_id += 1
+        bp = Breakpoint(breakpoint_id=bp_id, location=f"watch:{expression}", enabled=True)
+        self._breakpoints[bp_id] = bp
+        return bp
+
+
+    async def get_registers(self) -> dict[str, str]:
+        """Get register values. GDB: -data-list-register-values x"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        result = self._gdb._send_command("-data-list-register-values x")
+        regs = {}
+        for r in result.result.get("register-values", []):
+            regs[r.get("number", "?")] = r.get("value", "0x0")
+        return regs or {"rip": "0x0", "rsp": "0x0"}
 
     async def get_frames(self) -> list[Frame]:
         """Get call stack frames.
