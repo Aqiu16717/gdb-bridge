@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
-from typing import TYPE_CHECKING
 
 from gdb_bridge.core.exceptions import (
     EvaluationError,
@@ -21,12 +19,10 @@ from gdb_bridge.models.debug import (
     Variable,
 )
 from gdb_bridge.models.session import CreateSessionRequest, Session, SessionStatus
-
-if TYPE_CHECKING:
-    from gdb_session import GDBSession
+from gdb_bridge.services.debug_adapter import DebuggerAdapter
 
 
-class GDBService:
+class GDBService(DebuggerAdapter):
     """High-level service for GDB operations.
 
     This service wraps the low-level GDBSession and provides
@@ -101,14 +97,14 @@ class GDBService:
         location: str,
         condition: str | None = None,
     ) -> Breakpoint:
-        """Set a breakpoint.
+        """Set a breakpoint. Idempotent: duplicate locations return existing.
 
         Args:
             location: Breakpoint location (e.g., "main.c:42")
             condition: Optional condition
 
         Returns:
-            Created breakpoint
+            Created or existing breakpoint
 
         Raises:
             InvalidBreakpointError: If location is invalid
@@ -116,6 +112,11 @@ class GDBService:
         """
         if self._gdb is None:
             raise GDBProcessError("GDB session not started")
+
+        # Idempotent: return existing breakpoint at same location
+        for bp in self._breakpoints.values():
+            if bp.location == location:
+                return bp
 
         result = self._gdb.set_breakpoint(location, condition)
 
