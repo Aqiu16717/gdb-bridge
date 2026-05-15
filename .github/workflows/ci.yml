@@ -1,0 +1,198 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main, develop]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job 1: Code quality checks
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install ruff mypy pytest
+          pip install -r requirements.txt
+
+      - name: Run Ruff (linting)
+        run: ruff check . --output-format=github
+
+      - name: Run Ruff (formatting check)
+        run: ruff format --check .
+
+      - name: Run MyPy (type checking)
+        run: mypy . --strict --ignore-missing-imports
+
+  # Job 2: Unit tests
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-asyncio pytest-cov
+          pip install -r requirements.txt
+
+      - name: Run tests with coverage
+        run: |
+          pytest --cov=. --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+  # Job 3: Build and test Docker image
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Test Docker image
+        run: |
+          docker run --rm -d --name test-gdb-bridge \
+            --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
+            -p 8080:8080 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          sleep 5
+          curl -f http://localhost:8080/health || exit 1
+          docker stop test-gdb-bridge
+
+  # Job 4: Integration tests (requires GDB)
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GDB
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdb build-essential
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-asyncio httpx
+          pip install -r requirements.txt
+
+      - name: Build test programs
+        run: |
+          mkdir -p tests/bin
+          gcc -g -O0 tests/programs/simple.c -o tests/bin/simple
+          gcc -g -O0 tests/programs/factorial.c -o tests/bin/factorial
+
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ -v --timeout=60
+
+  # Job 5: Security scan
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Job 6: Deploy to staging (on main branch)
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [integration-test, security-scan]
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    steps:
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          # Add actual deployment steps here
+          # e.g., kubectl apply, docker-compose up, etc.
+
+  # Job 7: Deploy to production (on tag)
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [integration-test, security-scan]
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+    steps:
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment..."
+          # Add actual deployment steps here

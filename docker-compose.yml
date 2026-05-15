@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  gdb-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gdb-bridge:latest
+    container_name: gdb-bridge
+    ports:
+      - "8080:8080"
+    environment:
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
+    volumes:
+      # Mount for debugging local binaries (read-only for safety)
+      - ./debug-targets:/debug-targets:ro
+      # Session storage (ephemeral)
+      - /tmp/gdb-sessions
+    # Required for GDB to work properly in container
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Redis for distributed session storage (future use)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: gdb-bridge-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   restart: unless-stopped
+
+# volumes:
+#   redis-data:
