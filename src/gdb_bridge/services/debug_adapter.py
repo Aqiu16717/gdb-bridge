@@ -220,6 +220,37 @@ class DebuggerAdapter(ABC):
         """
         ...
 
+
+    # -- Remote Debugging ---------------------------------------------------------
+
+    @abstractmethod
+    async def attach_remote(self, host: str, port: int) -> Session:
+        """Attach to a remote gdbserver/lldb-server.
+
+        Args:
+            host: Remote host or IP address.
+            port: Remote debug server port.
+
+        Returns:
+            Session with updated status.
+        """
+        ...
+
+    # -- Core Dump -----------------------------------------------------------------
+
+    @abstractmethod
+    async def load_core(self, core_path: str, exec_path: str | None = None) -> Session:
+        """Load a core dump for offline analysis.
+
+        Args:
+            core_path: Path to the core dump file.
+            exec_path: Optional path to the executable.
+
+        Returns:
+            Session with updated status.
+        """
+        ...
+
     @abstractmethod
     async def get_frames(self) -> list[Frame]:
         """Get the current call stack.

@@ -389,6 +389,23 @@ class GDBService(DebuggerAdapter):
             regs[r.get("number", "?")] = r.get("value", "0x0")
         return regs or {"rip": "0x0", "rsp": "0x0"}
 
+
+    async def attach_remote(self, host: str, port: int) -> Session:
+        """Attach to remote gdbserver. GDB: target remote <host>:<port>"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        self._gdb._send_command(f"target remote {host}:{port}")
+        return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
+
+    async def load_core(self, core_path: str, exec_path: str | None = None) -> Session:
+        """Load core dump. GDB: core-file <path>"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        if exec_path:
+            self._gdb.load_file(exec_path)
+        self._gdb._send_command(f"core-file {core_path}")
+        return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
+
     async def get_frames(self) -> list[Frame]:
         """Get call stack frames.
 

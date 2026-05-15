@@ -81,6 +81,15 @@ class MockAdapter(DebuggerAdapter):
         self._check_alive()
         return EvaluationResult(expression=expression, value="42", type="int")
 
+
+    async def attach_remote(self, host: str, port: int) -> Session:
+        self._check_alive()
+        return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
+
+    async def load_core(self, core_path: str, exec_path: str | None = None) -> Session:
+        self._check_alive()
+        return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
+
     async def get_frames(self) -> list[Frame]:
         self._check_alive()
         return [

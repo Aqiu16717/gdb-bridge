@@ -194,6 +194,17 @@ class LLDBService(DebuggerAdapter):
         response = await self._send("get_registers")
         return response.get("data", {}).get("registers", {})
 
+
+    async def attach_remote(self, host: str, port: int) -> Session:
+        """Attach to remote lldb-server."""
+        response = await self._send("attach_remote", {"host": host, "port": port})
+        return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
+
+    async def load_core(self, core_path: str, exec_path: str | None = None) -> Session:
+        """Load core dump via LLDB."""
+        response = await self._send("load_core", {"core_path": core_path, "exec_path": exec_path})
+        return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
+
     async def get_frames(self) -> list[Frame]:
         response = await self._send("get_frames")
         frames = response.get("data", {}).get("frames", [])

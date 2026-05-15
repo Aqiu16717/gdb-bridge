@@ -139,6 +139,61 @@ class MCPServer:
             },
         },
         {
+            "name": "debug_get_threads",
+            "description": "List all threads in the debugged process",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"session_id": {"type": "string"}},
+                "required": ["session_id"],
+            },
+        },
+        {
+            "name": "debug_select_thread",
+            "description": "Select a thread for subsequent operations",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "session_id": {"type": "string"},
+                    "thread_id": {"type": "integer"},
+                },
+                "required": ["session_id", "thread_id"],
+            },
+        },
+        {
+            "name": "debug_set_watchpoint",
+            "description": "Set a data watchpoint (hardware breakpoint on variable)",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "session_id": {"type": "string"},
+                    "expression": {"type": "string"},
+                    "watch_type": {"type": "string", "enum": ["read", "write", "access"]},
+                },
+                "required": ["session_id", "expression"],
+            },
+        },
+        {
+            "name": "debug_get_registers",
+            "description": "Get current CPU register values",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"session_id": {"type": "string"}},
+                "required": ["session_id"],
+            },
+        },
+        {
+            "name": "debug_load_core",
+            "description": "Load a core dump file for offline crash analysis",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "session_id": {"type": "string"},
+                    "core_path": {"type": "string"},
+                },
+                "required": ["session_id", "core_path"],
+            },
+        },
+        {
             "name": "debug_stop",
             "description": "Terminate the debugging session",
             "inputSchema": {
@@ -227,6 +282,11 @@ class MCPServer:
             "debug_get_location": self._tool_get_location,
             "debug_evaluate": self._tool_evaluate,
             "debug_get_frames": self._tool_get_frames,
+            "debug_get_threads": self._tool_get_threads,
+            "debug_select_thread": self._tool_select_thread,
+            "debug_set_watchpoint": self._tool_set_watchpoint_mcp,
+            "debug_get_registers": self._tool_get_registers,
+            "debug_load_core": self._tool_load_core,
             "debug_stop": self._tool_stop,
         }
 
@@ -293,6 +353,32 @@ class MCPServer:
         adapter = self._get_adapter(args["session_id"])
         frames = await adapter.get_frames()
         return {"success": True, "data": [f.model_dump() for f in frames]}
+
+
+    async def _tool_get_threads(self, args: dict) -> dict:
+        adapter = self._get_adapter(args["session_id"])
+        threads = await adapter.get_threads()
+        return {"success": True, "data": [t.model_dump() for t in threads]}
+
+    async def _tool_select_thread(self, args: dict) -> dict:
+        adapter = self._get_adapter(args["session_id"])
+        await adapter.select_thread(args["thread_id"])
+        return {"success": True}
+
+    async def _tool_set_watchpoint_mcp(self, args: dict) -> dict:
+        adapter = self._get_adapter(args["session_id"])
+        bp = await adapter.set_watchpoint(args["expression"], args.get("watch_type", "write"))
+        return {"success": True, "data": bp.model_dump()}
+
+    async def _tool_get_registers(self, args: dict) -> dict:
+        adapter = self._get_adapter(args["session_id"])
+        regs = await adapter.get_registers()
+        return {"success": True, "data": regs}
+
+    async def _tool_load_core(self, args: dict) -> dict:
+        adapter = self._get_adapter(args["session_id"])
+        session = await adapter.load_core(args["core_path"])
+        return {"success": True, "data": session.model_dump()}
 
     async def _tool_stop(self, args: dict) -> dict:
         session_id = args["session_id"]
