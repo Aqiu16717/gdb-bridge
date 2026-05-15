@@ -1,93 +1,123 @@
 # gdb-bridge
 
-Make GDB agent friendly.
+Make GDB agent-friendly.
 
-一个 Agent 友好的 GDB 调试中间层，让 AI Agent 能通过结构化接口控制 GDB。
+An Agent-friendly GDB debugging middleware that lets AI Agents control GDB through structured JSON interfaces.
 
-## 项目状态
+## Status
 
-**当前阶段**: 架构设计已完成，准备 PoC 验证
+**MVP delivered** — 10 REST endpoints, 80+ tests passing, merged to main.
 
-## 快速开始
+## Quick Start
 
-### 安装依赖
-
-```bash
-pip install -r requirements.txt
-```
-
-### 运行 PoC
+### Install
 
 ```bash
-cd poc
-python gdb_bridge.py ./test_program
+cd /path/to/gdb-bridge
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e '.[dev]'
 ```
 
-### 运行测试
+### Run PoC (Mock Mode)
 
 ```bash
-cd tests
-make && ./test_program
+python3 poc/debug_agent_mock.py
 ```
 
-## 架构文档
+### Run HTTP API
 
-- [架构设计](docs/ARCHITECTURE.md) - 系统架构、接口契约、技术选型
-- [GDB/MI 映射](docs/GDB_MI_MAPPING.md) - API 与 GDB/MI 命令映射
-- [PoC 计划](docs/POC_PLAN.md) - PoC 实施方案
-- [API 规范](api/openapi.yaml) - OpenAPI 3.0 定义
+```bash
+uvicorn gdb_bridge.main:app --reload
+# Open http://localhost:8080/docs for Swagger UI
+```
 
-## 项目结构
+### Run Tests
+
+```bash
+pytest -m "not gdb" -v    # Skip GDB integration tests (macOS)
+pytest -m gdb -v           # GDB tests (Docker / Linux)
+```
+
+## Architecture
+
+```
+Agent (Claude/Copilot) → HTTP REST → gdb-bridge → GDB/MI → Target
+```
+
+| Layer | Module | Description |
+|-------|--------|-------------|
+| API | `src/gdb_bridge/api/` | FastAPI REST endpoints |
+| Services | `src/gdb_bridge/services/` | GDB/MI protocol wrapper |
+| Core | `src/gdb_bridge/core/` | Session manager (TTL), exceptions |
+| Models | `src/gdb_bridge/models/` | Pydantic data models |
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| POST | `/sessions` | Create debug session |
+| GET | `/sessions/{id}` | Get session status |
+| DELETE | `/sessions/{id}` | Terminate session |
+| POST | `/sessions/{id}/continue` | Continue execution |
+| POST | `/sessions/{id}/step` | Step (in/over/out) |
+| GET/POST/DELETE | `/sessions/{id}/breakpoints` | Breakpoint CRUD |
+| GET | `/sessions/{id}/variables/{name}` | Get variable |
+| GET | `/sessions/{id}/frames` | Call stack |
+| POST | `/sessions/{id}/evaluate` | Evaluate expression |
+
+## Docs
+
+- [Architecture](docs/ARCHITECTURE.md) — System design, API contracts, tech decisions
+- [GDB/MI Mapping](docs/GDB_MI_MAPPING.md) — API ↔ GDB/MI command reference
+- [PoC Plan](docs/POC_PLAN.md) — PoC scope and acceptance criteria
+- [API Spec](api/openapi.yaml) — OpenAPI 3.0 definition
+
+## Project Structure
 
 ```
 gdb-bridge/
-├── api/               # API 规范
-│   └── openapi.yaml
-├── cmd/               # 可执行程序入口
-│   └── gdb-bridge/
-├── docs/              # 文档
-│   ├── ARCHITECTURE.md
-│   ├── GDB_MI_MAPPING.md
-│   └── POC_PLAN.md
-├── internal/          # 内部实现
-│   ├── pkg/           # 共享包
-│   └── service/       # 业务逻辑
-├── poc/               # PoC 实现
-└── tests/             # 测试程序和用例
+├── src/gdb_bridge/       # Python package
+│   ├── models/           # Pydantic data models
+│   ├── core/             # Session manager, exceptions
+│   ├── services/         # GDB service layer
+│   └── api/              # FastAPI app + handlers
+├── poc/                  # PoC validation code
+├── tests/
+│   ├── unit/             # Unit tests (56)
+│   ├── integration/      # Integration tests (21)
+│   └── fixtures/         # C test programs
+├── docs/                 # Documentation
+├── api/                  # OpenAPI spec
+├── Dockerfile            # Multi-stage build (Python 3.11 + GDB)
+├── docker-compose.yml    # Local dev environment
+├── pyproject.toml        # Package metadata + tool config
+└── pytest.ini            # Pytest configuration
 ```
 
-## 核心功能
+## macOS Note
 
-### P0 (MVP)
-- [x] 会话管理（创建、销毁）
-- [x] 断点设置和删除
-- [x] 执行控制（继续、单步）
-- [x] 变量查看
-- [x] 调用栈查看
+GDB on macOS requires code signing to run programs (ptrace restriction). Use one of:
 
-### P1
-- [ ] 条件断点
-- [ ] Watchpoint
-- [ ] 表达式求值
-- [ ] 多线程支持
+- **Mock mode**: `python3 poc/debug_agent_mock.py` (full flow, no GDB needed)
+- **Docker**: `docker-compose up --build && docker exec -it gdb-bridge bash`
+- **Linux**: Works out of the box
 
-### P2
-- [ ] 远程调试
-- [ ] 核心转储分析
-- [ ] LLDB 支持
+## Tech Stack
 
-## 技术栈
+- **Language**: Python 3.11+ with full type hints
+- **Framework**: FastAPI + Uvicorn
+- **GDB Interface**: GDB/MI via pexpect
+- **Data Validation**: Pydantic v2
+- **Testing**: pytest + pytest-asyncio + httpx
+- **CI/CD**: GitHub Actions with Docker
 
-- **语言**: Python (PoC/MVP), 可能迁移到 Go (生产)
-- **协议**: HTTP REST
-- **GDB 接口**: GDB/MI (Machine Interface)
+## Contributing
 
-## 贡献
+- All cross-service interfaces must be reviewed by @architect
+- Code must pass @qa-master test suite (≥80% coverage)
+- DevOps config must follow @devps-master standards
 
-1. 所有跨服务接口需经 @architect 审核
-2. 代码需通过 @qa-master 的测试用例
-3. DevOps 配置需遵循 @devops-master 的规范
+## License
 
-## 许可证
-
-MIT License
+MIT
