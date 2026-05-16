@@ -35,13 +35,11 @@ testpaths = ["tests"]
 line-length = 100
 target-version = "py311"
 
-[tool.mypy]
-python_version = "3.11"
-ignore_missing_imports = true
-warn_return_any = false
-warn_unused_ignores = false
-disallow_untyped_defs = false
-
 [project.scripts]
 gdb-bridge = "gdb_bridge.main:main"
 gdb-bridge-mcp = "gdb_bridge.mcp.server:main"
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+follow_imports = "skip"
+exclude = ["tests/", "poc/"]
