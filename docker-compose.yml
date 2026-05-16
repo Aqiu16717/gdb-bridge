@@ -8,22 +8,24 @@ services:
     image: gdb-bridge:latest
     container_name: gdb-bridge
     ports:
-      - "8080:8080"
+      - "8080:8080"       # REST API
+      - "2345:2345"       # gdbserver remote
+      - "2346:2346"       # lldb-server remote
     environment:
       - DEBUG=${DEBUG:-false}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
+      - API_KEY=${API_KEY:-}
+      - MAX_CONCURRENT_SESSIONS=${MAX_CONCURRENT_SESSIONS:-10}
+      - COREDUMP_PATH=${COREDUMP_PATH:-/tmp/cores}
     volumes:
-      # Mount for debugging local binaries (read-only for safety)
       - ./debug-targets:/debug-targets:ro
-      # Session storage (ephemeral)
+      - ./tests/fixtures/core_dump:/core-dumps:ro
       - /tmp/gdb-sessions
-    # Required for GDB to work properly in container
     cap_add:
       - SYS_PTRACE
     security_opt:
       - seccomp:unconfined
-    # Resource limits
     deploy:
       resources:
         limits:
@@ -40,15 +42,11 @@ services:
       retries: 3
       start_period: 10s
 
-  # Optional: Redis for distributed session storage (future use)
+  # Redis for distributed sessions (enable when needed)
   # redis:
   #   image: redis:7-alpine
-  #   container_name: gdb-bridge-redis
   #   ports:
   #     - "6379:6379"
-  #   volumes:
-  #     - redis-data:/data
-  #   restart: unless-stopped
 
 # volumes:
 #   redis-data:

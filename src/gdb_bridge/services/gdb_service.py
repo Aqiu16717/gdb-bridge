@@ -296,10 +296,12 @@ class GDBService(DebuggerAdapter):
 
         for var_data in locals_data:
             if isinstance(var_data, dict):
+                type_str = var_data.get("type") or ""
                 variables.append(
                     Variable(
                         name=var_data.get("name", "unknown"),
                         value=var_data.get("value"),
+                        type=type_str if type_str else None,
                         is_optimized_out=var_data.get("value") == "<optimized out>",
                     )
                 )

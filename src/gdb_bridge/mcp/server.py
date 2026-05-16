@@ -45,6 +45,7 @@ class MCPServer:
     TOOLS = [
         {
             "name": "debug_start",
+            "category": "core",
             "description": "Start a new debugging session with GDB or LLDB",
             "inputSchema": {
                 "type": "object",
@@ -58,6 +59,7 @@ class MCPServer:
         },
         {
             "name": "debug_set_breakpoint",
+            "category": "core",
             "description": "Set a breakpoint at a function or file:line",
             "inputSchema": {
                 "type": "object",
@@ -71,6 +73,7 @@ class MCPServer:
         },
         {
             "name": "debug_run",
+            "category": "core",
             "description": "Run the program until it hits a breakpoint or exits",
             "inputSchema": {
                 "type": "object",
@@ -80,6 +83,7 @@ class MCPServer:
         },
         {
             "name": "debug_step",
+            "category": "core",
             "description": "Step execution (into, over, or out)",
             "inputSchema": {
                 "type": "object",
@@ -92,6 +96,7 @@ class MCPServer:
         },
         {
             "name": "debug_continue",
+            "category": "core",
             "description": "Continue execution until next stop",
             "inputSchema": {
                 "type": "object",
@@ -101,6 +106,7 @@ class MCPServer:
         },
         {
             "name": "debug_get_variables",
+            "category": "core",
             "description": "Get local variables in the current frame",
             "inputSchema": {
                 "type": "object",
@@ -110,6 +116,7 @@ class MCPServer:
         },
         {
             "name": "debug_get_location",
+            "category": "core",
             "description": "Get the current execution location (file, line, function)",
             "inputSchema": {
                 "type": "object",
@@ -119,6 +126,7 @@ class MCPServer:
         },
         {
             "name": "debug_evaluate",
+            "category": "core",
             "description": "Evaluate a C/C++ expression in the current frame",
             "inputSchema": {
                 "type": "object",
@@ -131,6 +139,7 @@ class MCPServer:
         },
         {
             "name": "debug_get_frames",
+            "category": "core",
             "description": "Get the call stack",
             "inputSchema": {
                 "type": "object",
@@ -140,6 +149,7 @@ class MCPServer:
         },
         {
             "name": "debug_get_threads",
+            "category": "expert",
             "description": "List all threads in the debugged process",
             "inputSchema": {
                 "type": "object",
@@ -149,6 +159,7 @@ class MCPServer:
         },
         {
             "name": "debug_select_thread",
+            "category": "expert",
             "description": "Select a thread for subsequent operations",
             "inputSchema": {
                 "type": "object",
@@ -161,6 +172,7 @@ class MCPServer:
         },
         {
             "name": "debug_set_watchpoint",
+            "category": "expert",
             "description": "Set a data watchpoint (hardware breakpoint on variable)",
             "inputSchema": {
                 "type": "object",
@@ -174,6 +186,7 @@ class MCPServer:
         },
         {
             "name": "debug_get_registers",
+            "category": "expert",
             "description": "Get current CPU register values",
             "inputSchema": {
                 "type": "object",
@@ -183,6 +196,7 @@ class MCPServer:
         },
         {
             "name": "debug_load_core",
+            "category": "expert",
             "description": "Load a core dump file for offline crash analysis",
             "inputSchema": {
                 "type": "object",
@@ -195,6 +209,7 @@ class MCPServer:
         },
         {
             "name": "debug_stop",
+            "category": "core",
             "description": "Terminate the debugging session",
             "inputSchema": {
                 "type": "object",
