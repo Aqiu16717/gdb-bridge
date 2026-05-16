@@ -71,6 +71,7 @@ class LLDBService(DebuggerAdapter):
         )
 
         # Verify subprocess started by reading initial output
+        assert self._process.stdout is not None
         first_line = await asyncio.wait_for(
             self._process.stdout.readline(),
             timeout=10,
@@ -234,10 +235,13 @@ class LLDBService(DebuggerAdapter):
                 raise GDBProcessError("LLDB subprocess not running")
 
             request = json.dumps({"method": method, "params": params or {}}) + "\n"
+            assert self._process.stdin is not None
             self._process.stdin.write(request.encode())
+            assert self._process.stdin is not None
             await self._process.stdin.drain()
 
             try:
+                assert self._process.stdout is not None
                 line = await asyncio.wait_for(
                     self._process.stdout.readline(),
                     timeout=30,
@@ -266,6 +270,7 @@ class LLDBService(DebuggerAdapter):
     async def _read_stderr(self) -> str:
         """Read any pending stderr from subprocess."""
         try:
+            assert self._process.stderr is not None
             stderr = await asyncio.wait_for(
                 self._process.stderr.read(),
                 timeout=0.5,

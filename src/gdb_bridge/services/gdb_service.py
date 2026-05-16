@@ -444,7 +444,7 @@ class GDBService(DebuggerAdapter):
 
     def _convert_stop_event(
         self,
-        stopped_reason: "GDBStopReason" | None,  # noqa: F821
+        stopped_reason: "GDBStopReason"  # type: ignore[name-defined] | None,  # noqa: F821
     ) -> StopEvent:
         """Convert GDB stop reason to StopEvent model.
 

@@ -69,6 +69,14 @@
 #define DW_FORM_ref_udata      0x15
 #define DW_FORM_indirect       0x16
 
+/* DWARF 5 additions */
+#define DW_FORM_strx           0x1a  /* index into .debug_str_offsets */
+#define DW_FORM_addrx          0x1b  /* index into .debug_addr */
+#define DW_FORM_ref_sup4       0x1c
+#define DW_FORM_ref_sup8       0x1d
+#define DW_FORM_data16         0x1e
+#define DW_FORM_line_strp      0x1f  /* offset into .debug_line_str */
+
 /* .debug_line constants */
 #define DW_LNS_copy            0x01
 #define DW_LNS_advance_pc      0x02

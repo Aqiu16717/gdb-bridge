@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from gdb_bridge.api import session_manager
+from gdb_bridge.api.app import session_manager  # type: ignore[attr-defined]
 from gdb_bridge.core.session_manager import SessionManager
 from gdb_bridge.models.session import Session
 from gdb_bridge.services.gdb_service import GDBService
@@ -11,7 +11,7 @@ from gdb_bridge.services.gdb_service import GDBService
 async def get_session_info(
     session_id: str,
     manager: SessionManager = session_manager,
-) -> tuple[Session, GDBService]:
+) -> tuple[Session, "GDBService"]:  # type: ignore[name-defined]
     """Get session and GDB service for a session ID.
 
     Args:
