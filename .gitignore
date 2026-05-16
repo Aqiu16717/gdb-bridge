@@ -37,12 +37,27 @@ dist/
 *.dSYM/
 *.dSYM/**
 
-# Compiled test binaries (build from source)
+# Compiled test fixtures (built from .c source)
 tests/fixtures/*_test
-tests/fixtures/**/lib*.dylib
-tests/fixtures/**/lib*.so
+tests/fixtures/**/*.dylib
 tests/fixtures/**/*_test
-tests/fixtures/**/*.dSYM/
+!tests/fixtures/**/*.c
+!tests/fixtures/**/*.cpp
+!tests/fixtures/**/*.sh
+!tests/fixtures/**/Makefile
 
-# C engine build artifacts
-src/gdb_bridge/engine/build/
+# Compiled test fixtures (built from source in CI)
+tests/fixtures/core_dump/crash_test
+tests/fixtures/core_dump/signal_test
+tests/fixtures/cpp_template/cpp_template_test
+tests/fixtures/cpp_template/multithread_test
+tests/fixtures/large_binary/large_binary_test
+tests/fixtures/real_world/json_test
+tests/fixtures/shared_lib/libfoo.dylib
+tests/fixtures/shared_lib/shared_lib_test
+tests/fixtures/simple_test
+tests/fixtures/segfault_test
+tests/fixtures/loop_test
+tests/fixtures/variables_test
+tests/fixtures/stripped_test
+tests/fixtures/optimized_test
