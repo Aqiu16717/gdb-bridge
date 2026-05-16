@@ -56,7 +56,9 @@ jobs:
           pip install -e '.[dev]'
 
       - name: Build C engine
-        run: make -C src/gdb_bridge/engine
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq build-essential
+          make -C src/gdb_bridge/engine
 
       - name: Run tests with coverage
         run: |
