@@ -28,8 +28,10 @@ CFLAGS   += -std=c11 -Wall -Wextra -Werror -Wstrict-aliasing=2 \
 LDFLAGS  += -shared
 
 # ── Targets ──
-ENGINE_DIR  := src/gdb_bridge/engine
-BUILD_DIR   := $(ENGINE_DIR)/build
+# Use Makefile's own directory to work from any CWD
+MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+ENGINE_DIR   := $(MAKEFILE_DIR)
+BUILD_DIR    := $(ENGINE_DIR)/build
 
 SO_TARGET   := $(BUILD_DIR)/libdwarf-bridge.$(SO_EXT)
 TEST_ELF    := $(BUILD_DIR)/test_elf.bin

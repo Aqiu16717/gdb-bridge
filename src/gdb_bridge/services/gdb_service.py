@@ -364,6 +364,7 @@ class GDBService(DebuggerAdapter):
             raise GDBProcessError("GDB session not started")
         self._gdb._send_command(f"-thread-select {thread_id}")
 
+    # type: ignore[attr-defined]
     async def set_watchpoint(self, expression: str, watch_type: str = "write") -> Breakpoint:
         """Set a data watchpoint. GDB: -break-watch -a|-r <expr>"""
         if self._gdb is None:
@@ -444,7 +445,7 @@ class GDBService(DebuggerAdapter):
 
     def _convert_stop_event(
         self,
-        stopped_reason: "GDBStopReason"  # type: ignore[name-defined] | None,  # noqa: F821
+        stopped_reason: "GDBStopReason" | None,  # noqa: F821
     ) -> StopEvent:
         """Convert GDB stop reason to StopEvent model.
 

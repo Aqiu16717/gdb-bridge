@@ -76,7 +76,7 @@ class LLDBService(DebuggerAdapter):
             self._process.stdout.readline(),
             timeout=10,
         )
-        first_line = first_line.decode().strip()
+        first_line = first_line.decode().strip() if isinstance(first_line, bytes) else first_line.strip()
         if not first_line:
             # Try stderr for error info
             err = await self._read_stderr()
@@ -249,7 +249,7 @@ class LLDBService(DebuggerAdapter):
             except asyncio.TimeoutError:
                 raise GDBProcessError("LLDB subprocess timeout")
 
-            line = line.decode().strip()
+            line = line.decode().strip() if isinstance(line, bytes) else line.strip()
             if not line:
                 err = await self._read_stderr()
                 raise GDBProcessError(f"LLDB subprocess empty response: {err}")
@@ -271,11 +271,12 @@ class LLDBService(DebuggerAdapter):
         """Read any pending stderr from subprocess."""
         try:
             assert self._process.stderr is not None
+            assert self._process and self._process.stderr
             stderr = await asyncio.wait_for(
                 self._process.stderr.read(),
                 timeout=0.5,
             )
-            return stderr.decode()
+            return stderr.decode() if isinstance(stderr, bytes) else str(stderr)
         except Exception:
             return ""
 
