@@ -9,14 +9,13 @@ from __future__ import annotations
 import json
 import os
 import sys
-from pathlib import Path
 from typing import Any
 
 LLDB_PATH = "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.framework/Versions/A/Resources/Python"
 if LLDB_PATH not in sys.path:
     sys.path.insert(0, LLDB_PATH)
 
-import lldb
+import lldb  # noqa: E402
 
 
 BINARY = os.path.join(os.path.dirname(__file__), "json_test")

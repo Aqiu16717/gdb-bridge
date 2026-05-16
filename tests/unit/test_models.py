@@ -23,7 +23,7 @@ from gdb_bridge.models.debug import (
     StopReason,
     Variable,
 )
-from gdb_bridge.models.errors import ErrorCode, ErrorDetail, ErrorResponse
+from gdb_bridge.models.errors import ErrorCode, ErrorResponse
 
 
 class TestTargetModel:

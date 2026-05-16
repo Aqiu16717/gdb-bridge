@@ -12,7 +12,6 @@ from gdb_bridge.models.debug import (
     EvaluationResult,
     StepType,
     StopEvent,
-    ThreadInfo,
     Variable,
 )
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 from pathlib import Path
 
 from gdb_bridge.core.exceptions import GDBProcessError
@@ -182,7 +181,7 @@ class LLDBService(DebuggerAdapter):
 
     async def set_watchpoint(self, expression: str, watch_type: str = "write") -> Breakpoint:
         response = await self._send("set_watchpoint", {"expression": expression, "type": watch_type})
-        data = response.get("data", {})
+        response.get("data", {})
         bp_id = self._next_bp_id
         self._next_bp_id += 1
         bp = Breakpoint(breakpoint_id=bp_id, location=f"watch:{expression}", enabled=True)
@@ -197,12 +196,12 @@ class LLDBService(DebuggerAdapter):
 
     async def attach_remote(self, host: str, port: int) -> Session:
         """Attach to remote lldb-server."""
-        response = await self._send("attach_remote", {"host": host, "port": port})
+        await self._send("attach_remote", {"host": host, "port": port})
         return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
 
     async def load_core(self, core_path: str, exec_path: str | None = None) -> Session:
         """Load core dump via LLDB."""
-        response = await self._send("load_core", {"core_path": core_path, "exec_path": exec_path})
+        await self._send("load_core", {"core_path": core_path, "exec_path": exec_path})
         return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
 
     async def get_frames(self) -> list[Frame]:

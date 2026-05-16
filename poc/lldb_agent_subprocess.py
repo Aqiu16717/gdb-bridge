@@ -19,7 +19,7 @@ LLDB_PATH = "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.
 if LLDB_PATH not in sys.path:
     sys.path.insert(0, LLDB_PATH)
 
-import lldb
+import lldb  # noqa: E402
 
 
 def main() -> None:

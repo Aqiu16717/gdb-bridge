@@ -13,19 +13,13 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
-import uuid
 
 from gdb_bridge.core.exceptions import (
-    EvaluationError,
-    GDBProcessError,
-    InvalidBreakpointError,
     SessionNotFoundError,
 )
 from gdb_bridge.core.session_manager import SessionManager
 from gdb_bridge.models.session import (
     CreateSessionRequest,
-    Session,
-    SessionStatus,
     Target,
     TargetType,
 )

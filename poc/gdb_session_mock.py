@@ -8,8 +8,7 @@ programs (e.g., macOS without proper code signing).
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 from gdb_session import GDBFrame, GDBResponse, GDBStopReason
 

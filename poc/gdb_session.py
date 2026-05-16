@@ -6,7 +6,6 @@ enabling structured interaction with GDB for AI Agent debugging workflows.
 
 from __future__ import annotations
 
-import json
 import re
 import uuid
 from dataclasses import dataclass, field

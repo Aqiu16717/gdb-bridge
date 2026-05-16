@@ -9,7 +9,6 @@ import json
 import pytest
 import pytest_asyncio
 
-from gdb_bridge.core.session_manager import SessionManager
 from gdb_bridge.mcp.server import MCPServer
 
 

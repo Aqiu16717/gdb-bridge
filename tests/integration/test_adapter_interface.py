@@ -16,7 +16,6 @@ import pytest
 
 from gdb_bridge.services.debug_adapter import DebuggerAdapter
 from gdb_bridge.models.debug import (
-    StepType,
     StopReason,
     Variable,
 )

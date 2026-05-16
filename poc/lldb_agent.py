@@ -26,7 +26,7 @@ LLDB_PATH = "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.
 if LLDB_PATH not in sys.path:
     sys.path.insert(0, LLDB_PATH)
 
-import lldb  # type: ignore[import-not-found]
+import lldb  # type: ignore[import-not-found] # noqa: E402
 
 
 # ── Data structures (mirrors MVP Pydantic models) ────────────────────────────

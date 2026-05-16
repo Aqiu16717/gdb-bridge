@@ -36,7 +36,7 @@ class GDBService(DebuggerAdapter):
             session_id: Associated session ID
         """
         super().__init__(session_id)
-        self._gdb: "GDBSession" | None = None
+        self._gdb: "GDBSession" | None = None  # noqa: F821
         self._breakpoints: dict[int, Breakpoint] = {}
         self._next_breakpoint_id = 1
 
@@ -445,7 +445,7 @@ class GDBService(DebuggerAdapter):
 
     def _convert_stop_event(
         self,
-        stopped_reason: "GDBStopReason" | None,
+        stopped_reason: "GDBStopReason" | None,  # noqa: F821
     ) -> StopEvent:
         """Convert GDB stop reason to StopEvent model.
 

@@ -9,7 +9,7 @@ import pytest
 import pytest_asyncio
 
 from gdb_bridge.core.exceptions import SessionNotFoundError
-from gdb_bridge.core.session_manager import SessionManager, SessionEntry
+from gdb_bridge.core.session_manager import SessionManager
 from gdb_bridge.models.session import Session, SessionStatus
 
 
