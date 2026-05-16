@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
 from gdb_bridge.core.exceptions import (
     EvaluationError,
     GDBProcessError,
@@ -36,7 +34,7 @@ class GDBService(DebuggerAdapter):
         Args:
             session_id: Associated session ID
         """
-        self.session_id = session_id
+        super().__init__(session_id)
         self._gdb: "GDBSession" | None = None
         self._breakpoints: dict[int, Breakpoint] = {}
         self._next_breakpoint_id = 1
@@ -70,10 +68,8 @@ class GDBService(DebuggerAdapter):
 
         # Load target if specified
         if request.target.type == "file":
-            # Change working directory if specified
-            if request.working_dir:
-                os.chdir(request.working_dir)
-
+            # Working directory is handled by the GDB process itself
+            # (os.chdir would cause concurrency issues across sessions)
             result = self._gdb.load_file(request.target.path)
             if not result.success:
                 await self.stop()

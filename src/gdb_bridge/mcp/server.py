@@ -207,7 +207,6 @@ class MCPServer:
     def __init__(self) -> None:
         """Initialize MCP server with session manager."""
         self._manager = SessionManager(ttl_seconds=3600)
-        self._adapters: dict[str, DebuggerAdapter] = {}
 
     async def run(self) -> None:
         """Run the MCP server loop on stdin/stdout."""
@@ -310,7 +309,7 @@ class MCPServer:
         )
         session = await adapter.start(request)
         self._manager.add_session(session, adapter)
-        self._adapters[session_id] = adapter
+        # adapter stored in SessionManager via add_session
 
         return {"success": True, "data": {"session_id": session_id, "backend": backend, "status": "created"}}
 
@@ -382,16 +381,19 @@ class MCPServer:
 
     async def _tool_stop(self, args: dict) -> dict:
         session_id = args["session_id"]
-        if session_id in self._adapters:
-            await self._adapters[session_id].stop()
-            del self._adapters[session_id]
-        await self._manager.remove_session(session_id)
+        try:
+            adapter = self._manager.get_gdb_service(session_id)
+            await adapter.stop()
+        except SessionNotFoundError:
+            pass
+        try:
+            await self._manager.remove_session(session_id)
+        except SessionNotFoundError:
+            pass
         return {"success": True, "data": {"status": "terminated"}}
 
     def _get_adapter(self, session_id: str) -> DebuggerAdapter:
-        if session_id not in self._adapters:
-            raise SessionNotFoundError(session_id)
-        return self._adapters[session_id]
+        return self._manager.get_gdb_service(session_id)
 
     # ── JSON-RPC helpers ───────────────────────────────────────────────
 

@@ -20,9 +20,9 @@ async def mcp():
     # Inject a MockAdapter-compatible session for testing
     yield server
     # Cleanup
-    for sid in list(server._adapters.keys()):
+    for sid in list(server._manager._sessions.keys()):
         try:
-            await server._adapters[sid].stop()
+            await server._manager._sessions[sid].stop()
         except Exception:
             pass
 

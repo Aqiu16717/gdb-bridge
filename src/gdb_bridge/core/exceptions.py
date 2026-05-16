@@ -48,6 +48,24 @@ class SessionNotFoundError(GDBBridgeException):
             details={"session_id": session_id},
         )
 
+class SessionExpiredError(GDBBridgeException):
+    """Session TTL expired."""
+
+    def __init__(self, session_id: str, message: str | None = None) -> None:
+        """Initialize exception.
+
+        Args:
+            session_id: Session ID that expired
+            message: Optional custom error message
+        """
+        msg = message or f"Session expired (TTL): {session_id}"
+        super().__init__(
+            message=msg,
+            error_code=ErrorCode.SESSION_TIMEOUT,
+            status_code=503,
+            details={"session_id": session_id},
+        )
+
 
 class SessionAlreadyRunningError(GDBBridgeException):
     """Session is already running."""

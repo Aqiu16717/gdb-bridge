@@ -8,11 +8,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from gdb_bridge.core.exceptions import SessionNotFoundError
+from gdb_bridge.core.exceptions import SessionNotFoundError, SessionExpiredError
 from gdb_bridge.models.session import Session, SessionStatus
 
 if TYPE_CHECKING:
-    from gdb_bridge.services.gdb_service import GDBService
+    from gdb_bridge.services.debug_adapter import DebuggerAdapter
 
 
 @dataclass
@@ -20,7 +20,7 @@ class SessionEntry:
     """Session entry with metadata."""
 
     session: Session
-    gdb_service: "GDBService"
+    gdb_service: "DebuggerAdapter"
     created_at: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
     last_activity: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
@@ -70,7 +70,7 @@ class SessionManager:
     def add_session(
         self,
         session: Session,
-        gdb_service: "GDBService",
+        gdb_service: "DebuggerAdapter",
     ) -> Session:
         """Add a new session.
 
@@ -104,7 +104,7 @@ class SessionManager:
         entry.last_activity = datetime.now(tz=timezone.utc)
         return entry.session
 
-    def get_gdb_service(self, session_id: str) -> "GDBService":
+    def get_gdb_service(self, session_id: str) -> "DebuggerAdapter":
         """Get GDB service for a session.
 
         Args:
@@ -177,9 +177,7 @@ class SessionManager:
 
         # Check if expired
         if datetime.now(tz=timezone.utc) - entry.last_activity > self._ttl:
-            # Mark for cleanup but still return for now
-            # The cleanup task will handle termination
-            raise SessionNotFoundError(session_id)
+            raise SessionExpiredError(session_id)
 
         return entry
 
