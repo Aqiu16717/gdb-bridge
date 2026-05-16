@@ -328,6 +328,195 @@ paths:
         '422':
           $ref: '#/components/responses/Unprocessable'
 
+  /sessions:
+    get:
+      summary: List all active sessions
+      operationId: listSessions
+      responses:
+        '200':
+          description: List of active sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Session'
+
+  /sessions/{sessionId}/threads:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      summary: List all threads
+      operationId: listThreads
+      responses:
+        '200':
+          description: Thread list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  threads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ThreadInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/threads/{threadId}/select:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: threadId
+        in: path
+        required: true
+        schema:
+          type: integer
+
+    post:
+      summary: Select active thread
+      operationId: selectThread
+      responses:
+        '200':
+          description: Thread selected
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/watchpoints:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      summary: Set a data watchpoint
+      operationId: setWatchpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWatchpointRequest'
+      responses:
+        '201':
+          description: Watchpoint created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Breakpoint'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+
+  /sessions/{sessionId}/registers:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      summary: Get register values
+      operationId: getRegisters
+      responses:
+        '200':
+          description: Register values
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                example:
+                  rip: "0x1000004c8"
+                  rbp: "0x7ffeebf0"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/remote-attach:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      summary: Attach via gdbserver/lldb-server
+      operationId: remoteAttach
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - host
+                - port
+              properties:
+                host:
+                  type: string
+                  example: "localhost"
+                port:
+                  type: integer
+                  example: 2345
+                protocol:
+                  type: string
+                  enum: [gdb, lldb]
+                  default: "gdb"
+      responses:
+        '200':
+          description: Attached successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /sessions/{sessionId}/load-core:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      summary: Load core dump for offline analysis
+      operationId: loadCore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - path
+              properties:
+                path:
+                  type: string
+                  example: "/path/to/core.dump"
+                executable:
+                  type: string
+                  example: "/path/to/binary"
+      responses:
+        '200':
+          description: Core dump loaded
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   schemas:
     CreateSessionRequest:
@@ -493,6 +682,33 @@ components:
             - type: boolean
         type:
           type: string
+
+    ThreadInfo:
+      type: object
+      properties:
+        threadId:
+          type: integer
+        name:
+          type: string
+        state:
+          type: string
+          enum: [running, stopped, waiting]
+        frame:
+          type: string
+          nullable: true
+
+    CreateWatchpointRequest:
+      type: object
+      required:
+        - expression
+      properties:
+        expression:
+          type: string
+          example: "x"
+        watchType:
+          type: string
+          enum: [read, write, access]
+          default: "write"
 
     Error:
       type: object

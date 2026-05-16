@@ -39,6 +39,7 @@ struct elf_handle {
     const Elf64_Ehdr  *ehdr;
     const Elf64_Shdr  *shdr_table;    /* section header table base */
     const char        *shstrtab;      /* section name string table */
+    size_t             shstrsz;       /* size of shstrtab (for bounds check) */
     uint16_t           shnum;         /* actual section count */
 
     /* .symtab cache */
@@ -153,6 +154,7 @@ elf_handle_t *elf_open(const char *path) {
             const Elf64_Shdr *shstr = &h->shdr_table[ehdr->e_shstrndx];
             if (shstr->sh_offset + shstr->sh_size <= h->map_size) {
                 h->shstrtab = (const char *)h->map_base + shstr->sh_offset;
+                h->shstrsz  = (size_t)shstr->sh_size;
             }
         }
     }
@@ -218,8 +220,7 @@ const char *elf_section_name(elf_handle_t *handle, uint16_t idx) {
         return NULL;
     }
     Elf64_Word name_off = handle->shdr_table[idx].sh_name;
-    /* Ensure offset is within shstrtab bounds — we don't have the shstrtab size
-     * cached separately, but sh_name offsets are typically small */
+    if (name_off >= handle->shstrsz) return NULL;  /* bounds check */
     return handle->shstrtab + name_off;
 }
 

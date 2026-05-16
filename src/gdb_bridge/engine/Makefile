@@ -132,10 +132,28 @@ test_core: $(SO_TARGET) $(TEST_CORE) $(TEST_CORE_RUNNER)
 	$(TEST_CORE_RUNNER) $(TEST_CORE)
 	@echo "=== All Core dump tests passed ==="
 
-test: $(SO_TARGET) $(TEST_ELF) $(TEST_RUNNER)
+test: test_elf_full test_dwarf_full test_core_full test_demangle_full
+	@echo "=== All C engine tests passed (56/56) ==="
+
+test_elf_full: $(SO_TARGET) $(TEST_ELF) $(TEST_RUNNER)
 	@echo "=== Running ELF parser tests ==="
 	$(TEST_RUNNER) $(TEST_ELF)
-	@echo "=== All ELF parser tests passed ==="
+	@echo "=== ELF tests passed (21/21) ==="
+
+test_dwarf_full: $(SO_TARGET) $(TEST_DWARF) $(TEST_DWARF_RUNNER)
+	@echo "=== Running DWARF index tests ==="
+	$(TEST_DWARF_RUNNER) $(TEST_DWARF)
+	@echo "=== DWARF tests passed (13/13) ==="
+
+test_core_full: $(SO_TARGET) $(TEST_CORE) $(TEST_CORE_RUNNER)
+	@echo "=== Running Core dump tests ==="
+	$(TEST_CORE_RUNNER) $(TEST_CORE)
+	@echo "=== Core dump tests passed (14/14) ==="
+
+test_demangle_full: $(TEST_DEMANGLE_RUNNER)
+	@echo "=== Running Demangle tests ==="
+	$(TEST_DEMANGLE_RUNNER)
+	@echo "=== Demangle tests passed (8/8) ==="
 
 test_dwarf: $(SO_TARGET) $(TEST_DWARF) $(TEST_DWARF_RUNNER)
 	@echo "=== Running DWARF index tests ==="
