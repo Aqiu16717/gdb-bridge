@@ -8,6 +8,10 @@ from gdb_bridge.models.session import (
     TargetType,
 )
 from gdb_bridge.models.debug import (
+<<<<<<< HEAD
+=======
+    ThreadInfo,
+>>>>>>> origin/main
     Breakpoint,
     CreateBreakpointRequest,
     EvaluateRequest,
@@ -35,6 +39,10 @@ __all__ = [
     "EvaluationResult",
     "Frame",
     "Location",
+<<<<<<< HEAD
+=======
+    "ThreadInfo",
+>>>>>>> origin/main
     "StepType",
     "StopEvent",
     "StopReason",

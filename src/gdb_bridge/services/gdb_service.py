@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
-from typing import TYPE_CHECKING
-
+from gdb_bridge.core.constants import GDB_COMMAND_TIMEOUT
 from gdb_bridge.core.exceptions import (
     EvaluationError,
     GDBProcessError,
     InvalidBreakpointError,
 )
 from gdb_bridge.models.debug import (
+    ThreadInfo,
     Breakpoint,
     EvaluationResult,
     Frame,
@@ -21,12 +19,10 @@ from gdb_bridge.models.debug import (
     Variable,
 )
 from gdb_bridge.models.session import CreateSessionRequest, Session, SessionStatus
-
-if TYPE_CHECKING:
-    from gdb_session import GDBSession
+from gdb_bridge.services.debug_adapter import DebuggerAdapter
 
 
-class GDBService:
+class GDBService(DebuggerAdapter):
     """High-level service for GDB operations.
 
     This service wraps the low-level GDBSession and provides
@@ -39,7 +35,7 @@ class GDBService:
         Args:
             session_id: Associated session ID
         """
-        self.session_id = session_id
+        super().__init__(session_id)
         self._gdb: "GDBSession" | None = None
         self._breakpoints: dict[int, Breakpoint] = {}
         self._next_breakpoint_id = 1
@@ -61,7 +57,7 @@ class GDBService:
 
         self._gdb = GDBSession(
             gdb_path=request.gdb_path or "gdb",
-            timeout=30,
+            timeout=GDB_COMMAND_TIMEOUT,
         )
 
         result = self._gdb.start()
@@ -73,10 +69,8 @@ class GDBService:
 
         # Load target if specified
         if request.target.type == "file":
-            # Change working directory if specified
-            if request.working_dir:
-                os.chdir(request.working_dir)
-
+            # Working directory is handled by the GDB process itself
+            # (os.chdir would cause concurrency issues across sessions)
             result = self._gdb.load_file(request.target.path)
             if not result.success:
                 await self.stop()
@@ -101,14 +95,14 @@ class GDBService:
         location: str,
         condition: str | None = None,
     ) -> Breakpoint:
-        """Set a breakpoint.
+        """Set a breakpoint. Idempotent: duplicate locations return existing.
 
         Args:
             location: Breakpoint location (e.g., "main.c:42")
             condition: Optional condition
 
         Returns:
-            Created breakpoint
+            Created or existing breakpoint
 
         Raises:
             InvalidBreakpointError: If location is invalid
@@ -116,6 +110,11 @@ class GDBService:
         """
         if self._gdb is None:
             raise GDBProcessError("GDB session not started")
+
+        # Idempotent: return existing breakpoint at same location
+        for bp in self._breakpoints.values():
+            if bp.location == location:
+                return bp
 
         result = self._gdb.set_breakpoint(location, condition)
 
@@ -298,10 +297,12 @@ class GDBService:
 
         for var_data in locals_data:
             if isinstance(var_data, dict):
+                type_str = var_data.get("type") or ""
                 variables.append(
                     Variable(
                         name=var_data.get("name", "unknown"),
                         value=var_data.get("value"),
+                        type=type_str if type_str else None,
                         is_optimized_out=var_data.get("value") == "<optimized out>",
                     )
                 )
@@ -336,6 +337,73 @@ class GDBService:
             expression=expression,
             value=result.result.get("value"),
         )
+
+
+    async def get_threads(self) -> list[ThreadInfo]:
+        """List all threads."""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        result = self._gdb._send_command("-thread-info")
+        if not result.success:
+            return [ThreadInfo(thread_id=1, name="main", is_stopped=True)]
+        threads_data = result.result.get("threads", [])
+        threads = []
+        for t in threads_data:
+            threads.append(ThreadInfo(
+                thread_id=int(t.get("id", 1)),
+                name=t.get("name"),
+                function=t.get("frame", {}).get("func") if "frame" in t else None,
+                is_stopped=t.get("state") == "stopped",
+            ))
+        return threads
+
+    async def select_thread(self, thread_id: int) -> None:
+        """Select a thread. GDB: -thread-select <id>"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        self._gdb._send_command(f"-thread-select {thread_id}")
+
+    async def set_watchpoint(self, expression: str, watch_type: str = "write") -> Breakpoint:
+        """Set a data watchpoint. GDB: -break-watch -a|-r <expr>"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        flag = "-a" if watch_type == "access" else "-r" if watch_type == "read" else ""
+        result = self._gdb._send_command(f"-break-watch {flag} {expression}".strip())
+        if not result.success:
+            raise InvalidBreakpointError(expression, reason=str(result.errors))
+        bp_id = self._next_bp_id
+        self._next_bp_id += 1
+        bp = Breakpoint(breakpoint_id=bp_id, location=f"watch:{expression}", enabled=True)
+        self._breakpoints[bp_id] = bp
+        return bp
+
+
+    async def get_registers(self) -> dict[str, str]:
+        """Get register values. GDB: -data-list-register-values x"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        result = self._gdb._send_command("-data-list-register-values x")
+        regs = {}
+        for r in result.result.get("register-values", []):
+            regs[r.get("number", "?")] = r.get("value", "0x0")
+        return regs or {"rip": "0x0", "rsp": "0x0"}
+
+
+    async def attach_remote(self, host: str, port: int) -> Session:
+        """Attach to remote gdbserver. GDB: target remote <host>:<port>"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        self._gdb._send_command(f"target remote {host}:{port}")
+        return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
+
+    async def load_core(self, core_path: str, exec_path: str | None = None) -> Session:
+        """Load core dump. GDB: core-file <path>"""
+        if self._gdb is None:
+            raise GDBProcessError("GDB session not started")
+        if exec_path:
+            self._gdb.load_file(exec_path)
+        self._gdb._send_command(f"core-file {core_path}")
+        return Session(session_id=self.session_id, status=SessionStatus.STOPPED)
 
     async def get_frames(self) -> list[Frame]:
         """Get call stack frames.

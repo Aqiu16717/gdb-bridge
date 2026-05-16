@@ -91,6 +91,20 @@ class EvaluateRequest(BaseModel):
     frame: int = Field(0, description="Frame index (0 = current)")
 
 
+<<<<<<< HEAD
+=======
+
+class ThreadInfo(BaseModel):
+    """Thread information."""
+
+    thread_id: int = Field(..., description="Thread ID")
+    name: str | None = Field(None, description="Thread name")
+    function: str | None = Field(None, description="Current function")
+    line: int | None = Field(None, description="Current line")
+    is_stopped: bool = Field(False, description="Whether thread is stopped")
+
+
+>>>>>>> origin/main
 class EvaluationResult(BaseModel):
     """Result of expression evaluation."""
 

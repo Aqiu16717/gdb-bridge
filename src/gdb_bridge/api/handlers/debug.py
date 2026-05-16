@@ -12,6 +12,10 @@ from gdb_bridge.models.debug import (
     EvaluationResult,
     StepType,
     StopEvent,
+<<<<<<< HEAD
+=======
+    ThreadInfo,
+>>>>>>> origin/main
     Variable,
 )
 
@@ -123,7 +127,11 @@ def create_debug_router(session_manager: SessionManager) -> APIRouter:
                 type=result.type,
             )
         except EvaluationError:
+<<<<<<< HEAD
             raise SessionNotFoundError(session_id, message=f"Variable '{{name}}' not found") from None
+=======
+            raise SessionNotFoundError(session_id, message=f"Variable '{name}' not found") from None
+>>>>>>> origin/main
 
     @debug_router.get(
         "/sessions/{session_id}/frames",
@@ -148,4 +156,80 @@ def create_debug_router(session_manager: SessionManager) -> APIRouter:
         gdb_service = session_manager.get_gdb_service(session_id)
         return await gdb_service.evaluate_expression(request.expression)
 
+<<<<<<< HEAD
+=======
+    @debug_router.get(
+        "/sessions/{session_id}/threads",
+        summary="List threads",
+    )
+    async def get_threads(session_id: str) -> dict:
+        """List all threads."""
+        gdb_service = session_manager.get_gdb_service(session_id)
+        threads = await gdb_service.get_threads()
+        return {"threads": [t.model_dump() for t in threads]}
+
+    @debug_router.post(
+        "/sessions/{session_id}/threads/{thread_id}/select",
+        summary="Select thread",
+    )
+    async def select_thread(session_id: str, thread_id: int) -> dict:
+        """Select a thread for subsequent operations."""
+        gdb_service = session_manager.get_gdb_service(session_id)
+        await gdb_service.select_thread(thread_id)
+        return {"success": True}
+
+    @debug_router.post(
+        "/sessions/{session_id}/watchpoints",
+        response_model=Breakpoint,
+        status_code=201,
+        summary="Set a watchpoint (data breakpoint)",
+    )
+    async def set_watchpoint(
+        session_id: str,
+        expression: str = Query(...),
+        watch_type: str = Query("write", enum=["read", "write", "access"]),
+    ) -> Breakpoint:
+        """Set a data watchpoint."""
+        gdb_service = session_manager.get_gdb_service(session_id)
+        return await gdb_service.set_watchpoint(expression, watch_type)
+
+    @debug_router.get(
+        "/sessions/{session_id}/registers",
+        summary="Get registers",
+    )
+    async def get_registers(session_id: str) -> dict:
+        """Get current register values."""
+        gdb_service = session_manager.get_gdb_service(session_id)
+        regs = await gdb_service.get_registers()
+        return {"registers": regs}
+
+    @debug_router.post(
+        "/sessions/{session_id}/remote-attach",
+        summary="Attach to remote debug server",
+    )
+    async def remote_attach(
+        session_id: str,
+        host: str = Query(...),
+        port: int = Query(...),
+    ) -> dict:
+        """Attach to remote gdbserver or lldb-server."""
+        gdb_service = session_manager.get_gdb_service(session_id)
+        session = await gdb_service.attach_remote(host, port)
+        return session.model_dump()
+
+    @debug_router.post(
+        "/sessions/{session_id}/load-core",
+        summary="Load core dump for analysis",
+    )
+    async def load_core(
+        session_id: str,
+        core_path: str = Query(...),
+        exec_path: str | None = Query(None),
+    ) -> dict:
+        """Load a core dump file."""
+        gdb_service = session_manager.get_gdb_service(session_id)
+        session = await gdb_service.load_core(core_path, exec_path)
+        return session.model_dump()
+
+>>>>>>> origin/main
     return debug_router

@@ -8,11 +8,20 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
+<<<<<<< HEAD
 from gdb_bridge.core.exceptions import SessionNotFoundError
 from gdb_bridge.models.session import Session, SessionStatus
 
 if TYPE_CHECKING:
     from gdb_bridge.services.gdb_service import GDBService
+=======
+from gdb_bridge.core.constants import SESSION_TTL_SECONDS, SESSION_CLEANUP_INTERVAL
+from gdb_bridge.core.exceptions import SessionNotFoundError, SessionExpiredError
+from gdb_bridge.models.session import Session, SessionStatus
+
+if TYPE_CHECKING:
+    from gdb_bridge.services.debug_adapter import DebuggerAdapter
+>>>>>>> origin/main
 
 
 @dataclass
@@ -20,7 +29,11 @@ class SessionEntry:
     """Session entry with metadata."""
 
     session: Session
+<<<<<<< HEAD
     gdb_service: "GDBService"
+=======
+    gdb_service: "DebuggerAdapter"
+>>>>>>> origin/main
     created_at: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
     last_activity: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
@@ -32,7 +45,11 @@ class SessionManager:
     cleanup of expired sessions.
     """
 
+<<<<<<< HEAD
     def __init__(self, ttl_seconds: int = 3600, cleanup_interval: int = 300) -> None:
+=======
+    def __init__(self, ttl_seconds: int = SESSION_TTL_SECONDS, cleanup_interval: int = SESSION_CLEANUP_INTERVAL) -> None:
+>>>>>>> origin/main
         """Initialize session manager.
 
         Args:
@@ -70,7 +87,11 @@ class SessionManager:
     def add_session(
         self,
         session: Session,
+<<<<<<< HEAD
         gdb_service: "GDBService",
+=======
+        gdb_service: "DebuggerAdapter",
+>>>>>>> origin/main
     ) -> Session:
         """Add a new session.
 
@@ -104,7 +125,11 @@ class SessionManager:
         entry.last_activity = datetime.now(tz=timezone.utc)
         return entry.session
 
+<<<<<<< HEAD
     def get_gdb_service(self, session_id: str) -> "GDBService":
+=======
+    def get_gdb_service(self, session_id: str) -> "DebuggerAdapter":
+>>>>>>> origin/main
         """Get GDB service for a session.
 
         Args:
@@ -177,9 +202,13 @@ class SessionManager:
 
         # Check if expired
         if datetime.now(tz=timezone.utc) - entry.last_activity > self._ttl:
+<<<<<<< HEAD
             # Mark for cleanup but still return for now
             # The cleanup task will handle termination
             raise SessionNotFoundError(session_id)
+=======
+            raise SessionExpiredError(session_id)
+>>>>>>> origin/main
 
         return entry
 

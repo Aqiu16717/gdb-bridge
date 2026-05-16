@@ -20,6 +20,19 @@ def create_sessions_router(session_manager: SessionManager) -> APIRouter:
     """
     sessions_router = APIRouter()
 
+<<<<<<< HEAD
+=======
+
+    @sessions_router.get(
+        "/sessions",
+        summary="List all active sessions",
+    )
+    async def list_sessions() -> dict:
+        """List all active debugging sessions."""
+        sessions = session_manager.list_sessions()
+        return {"sessions": [s.model_dump() for s in sessions]}
+
+>>>>>>> origin/main
     @sessions_router.post(
         "/sessions",
         response_model=Session,
