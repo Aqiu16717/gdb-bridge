@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from gdb_bridge.core.constants import GDB_COMMAND_TIMEOUT
 from gdb_bridge.core.exceptions import (
     EvaluationError,
     GDBProcessError,
@@ -56,7 +57,7 @@ class GDBService(DebuggerAdapter):
 
         self._gdb = GDBSession(
             gdb_path=request.gdb_path or "gdb",
-            timeout=30,
+            timeout=GDB_COMMAND_TIMEOUT,
         )
 
         result = self._gdb.start()
