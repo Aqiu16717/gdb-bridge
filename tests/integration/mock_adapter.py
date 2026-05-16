@@ -1,8 +1,13 @@
 """MockAdapter — in-memory DebuggerAdapter for testing."""
 
 from gdb_bridge.models.debug import (
-    Breakpoint, EvaluationResult, Frame, Location,
-    StopEvent, StopReason, Variable,
+    Breakpoint,
+    EvaluationResult,
+    Frame,
+    Location,
+    StopEvent,
+    StopReason,
+    Variable,
 )
 from gdb_bridge.models.session import CreateSessionRequest, Session, SessionStatus
 from gdb_bridge.core.exceptions import GDBProcessError
@@ -10,7 +15,6 @@ from gdb_bridge.services.debug_adapter import DebuggerAdapter
 
 
 class MockAdapter(DebuggerAdapter):
-
     def __init__(self, session_id: str) -> None:
         super().__init__(session_id)
         self._started = False
@@ -38,14 +42,20 @@ class MockAdapter(DebuggerAdapter):
 
     async def run(self) -> StopEvent:
         self._check_alive()
-        return StopEvent(status="stopped", reason=StopReason.BREAKPOINT_HIT,
-                       location=Location(file="main.c", line=self._current_line, function="main"))
+        return StopEvent(
+            status="stopped",
+            reason=StopReason.BREAKPOINT_HIT,
+            location=Location(file="main.c", line=self._current_line, function="main"),
+        )
 
     async def step(self, step_type: str = "step-in") -> StopEvent:
         self._check_alive()
         self._current_line += 1
-        return StopEvent(status="stopped", reason=StopReason.STEP_DONE,
-                       location=Location(file="main.c", line=self._current_line, function="main"))
+        return StopEvent(
+            status="stopped",
+            reason=StopReason.STEP_DONE,
+            location=Location(file="main.c", line=self._current_line, function="main"),
+        )
 
     async def continue_execution(self) -> StopEvent:
         self._check_alive()
@@ -80,7 +90,6 @@ class MockAdapter(DebuggerAdapter):
     async def evaluate_expression(self, expression: str) -> EvaluationResult:
         self._check_alive()
         return EvaluationResult(expression=expression, value="42", type="int")
-
 
     async def attach_remote(self, host: str, port: int) -> Session:
         self._check_alive()

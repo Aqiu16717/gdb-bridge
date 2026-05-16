@@ -3,6 +3,7 @@
 Tests marked with @pytest.mark.gdb require Docker/GDB environment.
 Tests without the mark run against the API layer with mock-compatible paths.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -371,8 +372,11 @@ class TestRealGDBFlows:
         if response.status_code == 200:
             stop = response.json()
             assert stop["reason"] in (
-                "signal-received", "exited-normally", "exited",
-                "breakpoint-hit", "step-done",
+                "signal-received",
+                "exited-normally",
+                "exited",
+                "breakpoint-hit",
+                "step-done",
             )
 
         await app_client.delete(f"/sessions/{session_id}")

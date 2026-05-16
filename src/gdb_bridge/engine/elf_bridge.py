@@ -16,6 +16,7 @@ Usage:
     debuglink = elf.get_debuglink()
     elf.close()
 """
+
 import ctypes
 import ctypes.util
 import os
@@ -24,49 +25,54 @@ from typing import Optional
 
 # ── ELF64 C types (must match libelf_utils.h) ──
 
+
 class Elf64_Ehdr(ctypes.Structure):
     _fields_ = [
-        ("e_ident",      ctypes.c_ubyte * 16),
-        ("e_type",       ctypes.c_uint16),
-        ("e_machine",    ctypes.c_uint16),
-        ("e_version",    ctypes.c_uint32),
-        ("e_entry",      ctypes.c_uint64),
-        ("e_phoff",      ctypes.c_uint64),
-        ("e_shoff",      ctypes.c_uint64),
-        ("e_flags",      ctypes.c_uint32),
-        ("e_ehsize",     ctypes.c_uint16),
-        ("e_phentsize",  ctypes.c_uint16),
-        ("e_phnum",      ctypes.c_uint16),
-        ("e_shentsize",  ctypes.c_uint16),
-        ("e_shnum",      ctypes.c_uint16),
-        ("e_shstrndx",   ctypes.c_uint16),
+        ("e_ident", ctypes.c_ubyte * 16),
+        ("e_type", ctypes.c_uint16),
+        ("e_machine", ctypes.c_uint16),
+        ("e_version", ctypes.c_uint32),
+        ("e_entry", ctypes.c_uint64),
+        ("e_phoff", ctypes.c_uint64),
+        ("e_shoff", ctypes.c_uint64),
+        ("e_flags", ctypes.c_uint32),
+        ("e_ehsize", ctypes.c_uint16),
+        ("e_phentsize", ctypes.c_uint16),
+        ("e_phnum", ctypes.c_uint16),
+        ("e_shentsize", ctypes.c_uint16),
+        ("e_shnum", ctypes.c_uint16),
+        ("e_shstrndx", ctypes.c_uint16),
     ]
+
 
 class Elf64_Shdr(ctypes.Structure):
     _fields_ = [
-        ("sh_name",      ctypes.c_uint32),
-        ("sh_type",      ctypes.c_uint32),
-        ("sh_flags",     ctypes.c_uint64),
-        ("sh_addr",      ctypes.c_uint64),
-        ("sh_offset",    ctypes.c_uint64),
-        ("sh_size",      ctypes.c_uint64),
-        ("sh_link",      ctypes.c_uint32),
-        ("sh_info",      ctypes.c_uint32),
+        ("sh_name", ctypes.c_uint32),
+        ("sh_type", ctypes.c_uint32),
+        ("sh_flags", ctypes.c_uint64),
+        ("sh_addr", ctypes.c_uint64),
+        ("sh_offset", ctypes.c_uint64),
+        ("sh_size", ctypes.c_uint64),
+        ("sh_link", ctypes.c_uint32),
+        ("sh_info", ctypes.c_uint32),
         ("sh_addralign", ctypes.c_uint64),
-        ("sh_entsize",   ctypes.c_uint64),
+        ("sh_entsize", ctypes.c_uint64),
     ]
+
 
 class Elf64_Sym(ctypes.Structure):
     _fields_ = [
-        ("st_name",  ctypes.c_uint32),
-        ("st_info",  ctypes.c_ubyte),
+        ("st_name", ctypes.c_uint32),
+        ("st_info", ctypes.c_ubyte),
         ("st_other", ctypes.c_ubyte),
         ("st_shndx", ctypes.c_uint16),
         ("st_value", ctypes.c_uint64),
-        ("st_size",  ctypes.c_uint64),
+        ("st_size", ctypes.c_uint64),
     ]
 
+
 # ── Library loading ──
+
 
 def _find_library() -> str:
     """Find libdwarf-bridge.{dylib,so} relative to this file or via env."""
@@ -87,9 +93,8 @@ def _find_library() -> str:
     if os.path.exists(libpath):
         return libpath
 
-    raise FileNotFoundError(
-        f"Cannot find {libname}. Build with: make -C {engine_dir}"
-    )
+    raise FileNotFoundError(f"Cannot find {libname}. Build with: make -C {engine_dir}")
+
 
 _lib = ctypes.CDLL(_find_library())
 
@@ -165,33 +170,38 @@ _libc.free.restype = None
 # ── Constants ──
 
 # Section types
-SHT_NULL      = 0
-SHT_PROGBITS  = 1
-SHT_SYMTAB    = 2
-SHT_STRTAB    = 3
-SHT_NOTE      = 7
-SHT_NOBITS    = 8
-SHT_DYNSYM    = 11
+SHT_NULL = 0
+SHT_PROGBITS = 1
+SHT_SYMTAB = 2
+SHT_STRTAB = 3
+SHT_NOTE = 7
+SHT_NOBITS = 8
+SHT_DYNSYM = 11
 
 # Symbol bindings
-STB_LOCAL  = 0
+STB_LOCAL = 0
 STB_GLOBAL = 1
-STB_WEAK   = 2
+STB_WEAK = 2
+
 
 def ELF64_ST_BIND(info: int) -> int:
     return info >> 4
 
+
 # Symbol types
-STT_NOTYPE  = 0
-STT_OBJECT  = 1
-STT_FUNC    = 2
+STT_NOTYPE = 0
+STT_OBJECT = 1
+STT_FUNC = 2
 STT_SECTION = 3
-STT_FILE    = 4
+STT_FILE = 4
+
 
 def ELF64_ST_TYPE(info: int) -> int:
-    return info & 0xf
+    return info & 0xF
+
 
 # ── Pythonic wrapper ──
+
 
 class ElfFile:
     """Pythonic wrapper around libdwarf-bridge ELF handle."""
@@ -297,5 +307,4 @@ class ElfFile:
         hdr = self.header
         machine_names = {62: "x86_64", 183: "aarch64", 243: "riscv"}
         mach = machine_names.get(hdr.e_machine, f"0x{hdr.e_machine:x}")
-        return (f"ElfFile({mach}, {self.section_count} sections, "
-                f"{self.symbol_count} symbols)")
+        return f"ElfFile({mach}, {self.section_count} sections, {self.symbol_count} symbols)"

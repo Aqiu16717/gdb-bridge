@@ -1,5 +1,5 @@
-"""Python ctypes wrapper for libdwarf-bridge DWARF index.
-"""
+"""Python ctypes wrapper for libdwarf-bridge DWARF index."""
+
 from __future__ import annotations
 
 import ctypes
@@ -53,6 +53,7 @@ class DwarfIndex:
 
     def __init__(self, path: str) -> None:
         from .elf_bridge import ElfFile
+
         self._elf = ElfFile(path)
         self._handle = _lib.dwarf_index_open(self._elf._handle)  # type: ignore[arg-type]
         if not self._handle:

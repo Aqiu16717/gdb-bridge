@@ -1,12 +1,12 @@
 """Centralized constants for gdb-bridge."""
 
 # ── Session Management ──────────────────────────────────────────────────────
-SESSION_TTL_SECONDS = 3600       # 1 hour
-SESSION_CLEANUP_INTERVAL = 300   # 5 minutes
+SESSION_TTL_SECONDS = 3600  # 1 hour
+SESSION_CLEANUP_INTERVAL = 300  # 5 minutes
 
 # ── GDB/LLDB Communication ──────────────────────────────────────────────────
-GDB_COMMAND_TIMEOUT = 30         # seconds
-LLDB_COMMAND_TIMEOUT = 30        # seconds
+GDB_COMMAND_TIMEOUT = 30  # seconds
+LLDB_COMMAND_TIMEOUT = 30  # seconds
 LLDB_PYTHON_PATH = "/usr/bin/python3"
 
 # ── HTTP / MCP ──────────────────────────────────────────────────────────────

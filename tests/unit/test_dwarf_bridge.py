@@ -4,6 +4,7 @@ Tests the libdwarf-bridge.dylib Python bindings:
     - ELF: open, sections, symbols, build-id, debuglink
     - DWARF: CU count, function lookup, source location
 """
+
 from __future__ import annotations
 
 import os
@@ -24,6 +25,7 @@ def elf_bridge():
     sys.path.insert(0, BUILD_DIR)
     try:
         from gdb_bridge.engine.elf_bridge import ElfFile
+
         return ElfFile
     except ImportError:
         pytest.skip("libdwarf-bridge.dylib not built (run make -f engine/Makefile)")
@@ -34,6 +36,7 @@ def dwarf_bridge():
     """Import dwarf_bridge module (requires built .dylib)."""
     try:
         from gdb_bridge.engine.dwarf_bridge import DwarfIndex
+
         return DwarfIndex
     except ImportError:
         pytest.skip("dwarf_bridge not available")

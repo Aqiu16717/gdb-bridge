@@ -115,10 +115,12 @@ class AgentDebugger:
         variables = []
         for var in locals_data:
             if isinstance(var, dict):
-                variables.append({
-                    "name": var.get("name"),
-                    "value": var.get("value"),
-                })
+                variables.append(
+                    {
+                        "name": var.get("name"),
+                        "value": var.get("value"),
+                    }
+                )
 
         response = {"variables": variables}
         self.last_state["variables"] = variables
@@ -172,10 +174,12 @@ class AgentDebugger:
             session_id = self.session.session_id
             self.session = None
             self.last_state = {}
-            return self._success_response({
-                "status": "terminated",
-                "session_id": session_id,
-            })
+            return self._success_response(
+                {
+                    "status": "terminated",
+                    "session_id": session_id,
+                }
+            )
         else:
             return self._error_response("Failed to stop session", result.errors)
 

@@ -83,7 +83,11 @@ class MCPServer:
                 "type": "object",
                 "properties": {
                     "session_id": {"type": "string"},
-                    "type": {"type": "string", "enum": ["step-in", "step-over", "step-out"], "default": "step-in"},
+                    "type": {
+                        "type": "string",
+                        "enum": ["step-in", "step-over", "step-out"],
+                        "default": "step-in",
+                    },
                 },
                 "required": ["session_id"],
             },
@@ -251,16 +255,21 @@ class MCPServer:
 
         try:
             if method == "initialize":
-                return self._response(req_id, {
-                    "protocolVersion": "2024-11-05",
-                    "capabilities": {"tools": {}},
-                    "serverInfo": {"name": "gdb-bridge", "version": "0.2.0"},
-                })
+                return self._response(
+                    req_id,
+                    {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {"tools": {}},
+                        "serverInfo": {"name": "gdb-bridge", "version": "0.2.0"},
+                    },
+                )
             elif method == "tools/list":
                 return self._response(req_id, {"tools": self.TOOLS})
             elif method == "tools/call":
                 result = await self._call_tool(request.get("params", {}))
-                return self._response(req_id, {"content": [{"type": "text", "text": json.dumps(result, default=str)}]})
+                return self._response(
+                    req_id, {"content": [{"type": "text", "text": json.dumps(result, default=str)}]}
+                )
             elif method == "notifications/initialized":
                 return {}  # No response for notifications
             else:
@@ -320,7 +329,10 @@ class MCPServer:
         self._manager.add_session(session, adapter)
         # adapter stored in SessionManager via add_session
 
-        return {"success": True, "data": {"session_id": session_id, "backend": backend, "status": "created"}}
+        return {
+            "success": True,
+            "data": {"session_id": session_id, "backend": backend, "status": "created"},
+        }
 
     async def _tool_set_breakpoint(self, args: dict) -> dict:
         adapter = self._get_adapter(args["session_id"])
@@ -361,7 +373,6 @@ class MCPServer:
         adapter = self._get_adapter(args["session_id"])
         frames = await adapter.get_frames()
         return {"success": True, "data": [f.model_dump() for f in frames]}
-
 
     async def _tool_get_threads(self, args: dict) -> dict:
         adapter = self._get_adapter(args["session_id"])

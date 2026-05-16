@@ -26,11 +26,7 @@ def create_router(session_manager: SessionManager) -> APIRouter:
         return {"status": "ok"}
 
     # Mount sub-routers
-    api_router.include_router(
-        create_sessions_router(session_manager), tags=["Sessions"]
-    )
-    api_router.include_router(
-        create_debug_router(session_manager), tags=["Debug"]
-    )
+    api_router.include_router(create_sessions_router(session_manager), tags=["Sessions"])
+    api_router.include_router(create_debug_router(session_manager), tags=["Debug"])
 
     return api_router

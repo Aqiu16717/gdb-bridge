@@ -98,7 +98,11 @@ def main() -> None:
                 t = _get_target(target)
                 bp = t.BreakpointCreateByName(params["expression"])
                 bp_id = bp.GetID()
-                info = {"breakpoint_id": bp_id, "location": "watch:" + params["expression"], "enabled": True}
+                info = {
+                    "breakpoint_id": bp_id,
+                    "location": "watch:" + params["expression"],
+                    "enabled": True,
+                }
                 breakpoints[bp_id] = info
                 _write({"success": True, "data": info})
 
@@ -158,7 +162,9 @@ def _get_location(process: lldb.SBProcess) -> dict:
     frame = thread.GetSelectedFrame()
     line_entry = frame.GetLineEntry()
     return {
-        "file": f"{line_entry.GetFileSpec().GetDirectory()}/{line_entry.GetFileSpec().GetFilename()}" if line_entry.IsValid() else None,
+        "file": f"{line_entry.GetFileSpec().GetDirectory()}/{line_entry.GetFileSpec().GetFilename()}"
+        if line_entry.IsValid()
+        else None,
         "line": line_entry.GetLine() if line_entry.IsValid() else None,
         "function": frame.GetFunctionName() or None,
         "address": f"0x{frame.GetPC():x}",
@@ -175,12 +181,14 @@ def _get_variables(process: lldb.SBProcess) -> list[dict]:
         for i in range(vals.GetSize()):
             var = vals.GetValueAtIndex(i)
             val_str = var.GetValue() or ""
-            variables.append({
-                "name": var.GetName() or "unnamed",
-                "value": val_str,
-                "type": var.GetTypeName() or "",
-                "is_optimized_out": "optimized" in val_str.lower(),
-            })
+            variables.append(
+                {
+                    "name": var.GetName() or "unnamed",
+                    "value": val_str,
+                    "type": var.GetTypeName() or "",
+                    "is_optimized_out": "optimized" in val_str.lower(),
+                }
+            )
 
     return variables
 
@@ -207,12 +215,16 @@ def _get_frames(process: lldb.SBProcess) -> list[dict]:
     for i in range(thread.GetNumFrames()):
         frame = thread.GetFrameAtIndex(i)
         line_entry = frame.GetLineEntry()
-        frames.append({
-            "level": i,
-            "function": frame.GetFunctionName() or None,
-            "file": f"{line_entry.GetFileSpec().GetDirectory()}/{line_entry.GetFileSpec().GetFilename()}" if line_entry.IsValid() else None,
-            "line": line_entry.GetLine() if line_entry.IsValid() else None,
-        })
+        frames.append(
+            {
+                "level": i,
+                "function": frame.GetFunctionName() or None,
+                "file": f"{line_entry.GetFileSpec().GetDirectory()}/{line_entry.GetFileSpec().GetFilename()}"
+                if line_entry.IsValid()
+                else None,
+                "line": line_entry.GetLine() if line_entry.IsValid() else None,
+            }
+        )
     return frames
 
 
@@ -237,7 +249,9 @@ def _stop_event(process: lldb.SBProcess) -> dict:
             if frame:
                 le = frame.GetLineEntry()
                 result["location"] = {
-                    "file": f"{le.GetFileSpec().GetDirectory()}/{le.GetFileSpec().GetFilename()}" if le.IsValid() else None,
+                    "file": f"{le.GetFileSpec().GetDirectory()}/{le.GetFileSpec().GetFilename()}"
+                    if le.IsValid()
+                    else None,
                     "line": le.GetLine() if le.IsValid() else None,
                     "function": frame.GetFunctionName() or None,
                     "address": f"0x{frame.GetPC():x}",
@@ -248,20 +262,28 @@ def _stop_event(process: lldb.SBProcess) -> dict:
     return {"success": True, "data": result}
 
 
-
 def _get_threads(process):
     threads = []
     for i in range(process.GetNumThreads()):
         t = process.GetThreadAtIndex(i)
         frame = t.GetSelectedFrame()
         func = frame.GetFunctionName() if frame else None
-        threads.append({"thread_id": t.GetThreadID(), "name": t.GetName() or None, "function": func, "is_stopped": t.IsValid()})
+        threads.append(
+            {
+                "thread_id": t.GetThreadID(),
+                "name": t.GetName() or None,
+                "function": func,
+                "is_stopped": t.IsValid(),
+            }
+        )
     return threads
 
+
 def _get_target(target_or_process):
-    if hasattr(target_or_process, 'GetTarget'):
+    if hasattr(target_or_process, "GetTarget"):
         return target_or_process.GetTarget()
     return target_or_process
+
 
 def _get_process(process: lldb.SBProcess | None) -> lldb.SBProcess:
     if not process or not process.IsValid():

@@ -91,7 +91,6 @@ class EvaluateRequest(BaseModel):
     frame: int = Field(0, description="Frame index (0 = current)")
 
 
-
 class ThreadInfo(BaseModel):
     """Thread information."""
 

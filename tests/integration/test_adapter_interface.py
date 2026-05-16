@@ -10,6 +10,7 @@ Usage:
     pytest tests/integration/test_adapter_interface.py -v -k "gdb"
     pytest tests/integration/test_adapter_interface.py -v -k "lldb"
 """
+
 from __future__ import annotations
 
 import pytest
@@ -25,15 +26,18 @@ def get_adapter_instance(name: str, session_id: str) -> DebuggerAdapter:
     """Factory: create an adapter instance by backend name."""
     if name == "gdb":
         from gdb_bridge.services.gdb_service import GDBService
+
         return GDBService(session_id)
     elif name == "lldb":
         try:
             from gdb_bridge.services.lldb_service import LLDBService
+
             return LLDBService(session_id)
         except ImportError:
             pytest.skip("LLDBService not available (Phase 2 TODO)")
     elif name == "mock":
         from .mock_adapter import MockAdapter
+
         return MockAdapter(session_id)
     raise ValueError(f"Unknown adapter: {name}")
 
@@ -46,6 +50,7 @@ class TestAdapterContract:
 
     These tests only inspect the class — no debugger process needed.
     """
+
     ADAPTERS = ["mock", "gdb", "lldb"]
 
     @pytest.mark.parametrize("backend", ADAPTERS)
@@ -53,29 +58,32 @@ class TestAdapterContract:
         """All backends must implement the full DebuggerAdapter ABC."""
         adapter = get_adapter_instance(backend, "test_sess")
         abstract_methods = {
-            "start", "stop",
-            "run", "step", "continue_execution",
-            "set_breakpoint", "delete_breakpoint", "list_breakpoints",
-            "get_current_location", "get_variables",
-            "evaluate_expression", "get_frames",
-            "get_threads", "select_thread",          # Thread support
-            "set_watchpoint", "get_registers",         # Watchpoints + registers
+            "start",
+            "stop",
+            "run",
+            "step",
+            "continue_execution",
+            "set_breakpoint",
+            "delete_breakpoint",
+            "list_breakpoints",
+            "get_current_location",
+            "get_variables",
+            "evaluate_expression",
+            "get_frames",
+            "get_threads",
+            "select_thread",  # Thread support
+            "set_watchpoint",
+            "get_registers",  # Watchpoints + registers
         }
         for method in abstract_methods:
-            assert hasattr(adapter, method), (
-                f"{backend} adapter missing method: {method}"
-            )
-            assert callable(getattr(adapter, method)), (
-                f"{backend}.{method} is not callable"
-            )
+            assert hasattr(adapter, method), f"{backend} adapter missing method: {method}"
+            assert callable(getattr(adapter, method)), f"{backend}.{method} is not callable"
 
     @pytest.mark.parametrize("backend", ADAPTERS)
     def test_adapter_is_instance_of_abc(self, backend: str) -> None:
         """All backends must be instances of DebuggerAdapter."""
         adapter = get_adapter_instance(backend, "test_sess")
-        assert isinstance(adapter, DebuggerAdapter), (
-            f"{backend} does not implement DebuggerAdapter"
-        )
+        assert isinstance(adapter, DebuggerAdapter), f"{backend} does not implement DebuggerAdapter"
 
 
 class TestAdapterSessionLifecycle:

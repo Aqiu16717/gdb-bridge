@@ -53,7 +53,9 @@ class LLDBService(DebuggerAdapter):
         Raises:
             GDBProcessError: If LLDB subprocess fails to start.
         """
-        agent_script = Path(__file__).parent.parent.parent.parent / "poc" / "lldb_agent_subprocess.py"
+        agent_script = (
+            Path(__file__).parent.parent.parent.parent / "poc" / "lldb_agent_subprocess.py"
+        )
         if not agent_script.exists():
             raise GDBProcessError(f"LLDB agent script not found: {agent_script}")
 
@@ -103,16 +105,12 @@ class LLDBService(DebuggerAdapter):
         return await self._stop_event(await self._send("run"))
 
     async def step(self, step_type: str = "step-in") -> StopEvent:
-        return await self._stop_event(
-            await self._send("step", {"type": step_type})
-        )
+        return await self._stop_event(await self._send("step", {"type": step_type}))
 
     async def continue_execution(self) -> StopEvent:
         return await self._stop_event(await self._send("continue"))
 
-    async def set_breakpoint(
-        self, location: str, condition: str | None = None
-    ) -> Breakpoint:
+    async def set_breakpoint(self, location: str, condition: str | None = None) -> Breakpoint:
         # Idempotent check
         for bp in self._breakpoints.values():
             if bp.location == location:
@@ -170,7 +168,6 @@ class LLDBService(DebuggerAdapter):
             value=data.get("value"),
         )
 
-
     async def get_threads(self) -> list[ThreadInfo]:
         response = await self._send("get_threads")
         threads = response.get("data", {}).get("threads", [])
@@ -180,7 +177,9 @@ class LLDBService(DebuggerAdapter):
         await self._send("select_thread", {"thread_id": thread_id})
 
     async def set_watchpoint(self, expression: str, watch_type: str = "write") -> Breakpoint:
-        response = await self._send("set_watchpoint", {"expression": expression, "type": watch_type})
+        response = await self._send(
+            "set_watchpoint", {"expression": expression, "type": watch_type}
+        )
         response.get("data", {})
         bp_id = self._next_bp_id
         self._next_bp_id += 1
@@ -188,11 +187,9 @@ class LLDBService(DebuggerAdapter):
         self._breakpoints[bp_id] = bp
         return bp
 
-
     async def get_registers(self) -> dict[str, str]:
         response = await self._send("get_registers")
         return response.get("data", {}).get("registers", {})
-
 
     async def attach_remote(self, host: str, port: int) -> Session:
         """Attach to remote lldb-server."""

@@ -86,7 +86,9 @@ class TestSessionManagerBasic:
             session_manager.get_session("sess_test")
 
     @pytest.mark.asyncio
-    async def test_update_session_status(self, session_manager, test_session, mock_gdb_service) -> None:
+    async def test_update_session_status(
+        self, session_manager, test_session, mock_gdb_service
+    ) -> None:
         """Test updating session status."""
         session_manager.add_session(test_session, mock_gdb_service)
         updated = session_manager.update_session_status("sess_test", SessionStatus.RUNNING)
@@ -112,7 +114,9 @@ class TestSessionManagerTTL:
         await sm.stop()
 
     @pytest.mark.asyncio
-    async def test_active_session_not_expired(self, session_manager, test_session, mock_gdb_service) -> None:
+    async def test_active_session_not_expired(
+        self, session_manager, test_session, mock_gdb_service
+    ) -> None:
         """Test that active sessions are not expired."""
         session_manager.add_session(test_session, mock_gdb_service)
         session = session_manager.get_session("sess_test")

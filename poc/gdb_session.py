@@ -17,6 +17,7 @@ import pexpect
 @dataclass
 class GDBBreakpoint:
     """Represents a GDB breakpoint."""
+
     number: int
     type: str
     disp: str
@@ -31,6 +32,7 @@ class GDBBreakpoint:
 @dataclass
 class GDBFrame:
     """Represents a stack frame."""
+
     level: int
     addr: str
     func: Optional[str] = None
@@ -42,6 +44,7 @@ class GDBFrame:
 @dataclass
 class GDBVariable:
     """Represents a variable in the current scope."""
+
     name: str
     type: str
     value: str
@@ -50,6 +53,7 @@ class GDBVariable:
 @dataclass
 class GDBStopReason:
     """Represents why the program stopped."""
+
     reason: str
     bkptno: Optional[int] = None
     frame: Optional[GDBFrame] = None
@@ -59,6 +63,7 @@ class GDBStopReason:
 @dataclass
 class GDBResponse:
     """Structured response from a GDB/MI command."""
+
     success: bool
     result: dict[str, Any] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
@@ -184,10 +189,7 @@ class GDBSession:
                 # Parse the output for stopped notification
                 return self._parse_output(output)
             except pexpect.TIMEOUT:
-                return GDBResponse(
-                    success=False,
-                    errors=["Timeout waiting for program to stop"]
-                )
+                return GDBResponse(success=False, errors=["Timeout waiting for program to stop"])
         return result
 
     def step(self) -> GDBResponse:
@@ -368,7 +370,7 @@ class GDBSession:
         i = 0
         while i < len(text):
             # Find key
-            key_match = re.match(r'([a-zA-Z0-9_-]+)', text[i:])
+            key_match = re.match(r"([a-zA-Z0-9_-]+)", text[i:])
             if not key_match:
                 break
 
@@ -419,7 +421,7 @@ class GDBSession:
             return self._parse_dict(text)
 
         # Simple value (number or identifier)
-        match = re.match(r'([^,\]]*)', text)
+        match = re.match(r"([^,\]]*)", text)
         if match:
             value = match.group(1).strip()
             # Try to convert to number
@@ -494,7 +496,7 @@ class GDBSession:
 
         while i < len(text) and text[i] != "}":
             # Find key
-            key_match = re.match(r'\s*([a-zA-Z0-9_-]+)\s*=', text[i:])
+            key_match = re.match(r"\s*([a-zA-Z0-9_-]+)\s*=", text[i:])
             if not key_match:
                 break
 

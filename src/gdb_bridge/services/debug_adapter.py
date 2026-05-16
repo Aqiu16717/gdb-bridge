@@ -168,7 +168,6 @@ class DebuggerAdapter(ABC):
         """
         ...
 
-
     # -- Threads ------------------------------------------------------------------
 
     @abstractmethod
@@ -208,7 +207,6 @@ class DebuggerAdapter(ABC):
         """
         ...
 
-
     @abstractmethod
     async def get_registers(self) -> dict[str, str]:
         """Get current register values.
@@ -217,7 +215,6 @@ class DebuggerAdapter(ABC):
             Dict mapping register name to hex value.
         """
         ...
-
 
     # -- Remote Debugging ---------------------------------------------------------
 

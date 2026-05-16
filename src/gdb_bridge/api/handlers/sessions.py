@@ -20,7 +20,6 @@ def create_sessions_router(session_manager: SessionManager) -> APIRouter:
     """
     sessions_router = APIRouter()
 
-
     @sessions_router.get(
         "/sessions",
         summary="List all active sessions",

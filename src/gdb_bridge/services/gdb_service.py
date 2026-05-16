@@ -338,7 +338,6 @@ class GDBService(DebuggerAdapter):
             value=result.result.get("value"),
         )
 
-
     async def get_threads(self) -> list[ThreadInfo]:
         """List all threads."""
         if self._gdb is None:
@@ -349,12 +348,14 @@ class GDBService(DebuggerAdapter):
         threads_data = result.result.get("threads", [])
         threads = []
         for t in threads_data:
-            threads.append(ThreadInfo(
-                thread_id=int(t.get("id", 1)),
-                name=t.get("name"),
-                function=t.get("frame", {}).get("func") if "frame" in t else None,
-                is_stopped=t.get("state") == "stopped",
-            ))
+            threads.append(
+                ThreadInfo(
+                    thread_id=int(t.get("id", 1)),
+                    name=t.get("name"),
+                    function=t.get("frame", {}).get("func") if "frame" in t else None,
+                    is_stopped=t.get("state") == "stopped",
+                )
+            )
         return threads
 
     async def select_thread(self, thread_id: int) -> None:
@@ -377,7 +378,6 @@ class GDBService(DebuggerAdapter):
         self._breakpoints[bp_id] = bp
         return bp
 
-
     async def get_registers(self) -> dict[str, str]:
         """Get register values. GDB: -data-list-register-values x"""
         if self._gdb is None:
@@ -387,7 +387,6 @@ class GDBService(DebuggerAdapter):
         for r in result.result.get("register-values", []):
             regs[r.get("number", "?")] = r.get("value", "0x0")
         return regs or {"rip": "0x0", "rsp": "0x0"}
-
 
     async def attach_remote(self, host: str, port: int) -> Session:
         """Attach to remote gdbserver. GDB: target remote <host>:<port>"""

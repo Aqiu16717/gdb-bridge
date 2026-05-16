@@ -33,7 +33,11 @@ class SessionManager:
     cleanup of expired sessions.
     """
 
-    def __init__(self, ttl_seconds: int = SESSION_TTL_SECONDS, cleanup_interval: int = SESSION_CLEANUP_INTERVAL) -> None:
+    def __init__(
+        self,
+        ttl_seconds: int = SESSION_TTL_SECONDS,
+        cleanup_interval: int = SESSION_CLEANUP_INTERVAL,
+    ) -> None:
         """Initialize session manager.
 
         Args:

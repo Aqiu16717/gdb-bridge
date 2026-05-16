@@ -48,7 +48,9 @@ class Session(BaseModel):
     session_id: str = Field(..., description="Unique session identifier")
     status: SessionStatus = Field(..., description="Current session status")
     target_pid: int | None = Field(None, description="Target process ID")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc), description="Session creation time")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(tz=timezone.utc), description="Session creation time"
+    )
     stopped_at: StoppedAt | None = Field(None, description="Where the program stopped")
 
     model_config = {

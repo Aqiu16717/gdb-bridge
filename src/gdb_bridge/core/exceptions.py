@@ -48,6 +48,7 @@ class SessionNotFoundError(GDBBridgeException):
             details={"session_id": session_id},
         )
 
+
 class SessionExpiredError(GDBBridgeException):
     """Session TTL expired."""
 

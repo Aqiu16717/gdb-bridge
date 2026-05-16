@@ -4,6 +4,7 @@
 Usage:
     /usr/bin/python3 tests/fixtures/real_world/test_real_fixture.py
 """
+
 from __future__ import annotations
 
 import json
@@ -54,8 +55,11 @@ def main():
     # ── 2. Set breakpoint at Config struct usage ───────────────────────
     print("2. Setting breakpoint at main...")
     bp = target.BreakpointCreateByName("main")
-    check("Breakpoint at main", bp.IsValid() and bp.GetNumLocations() > 0,
-          f"locations={bp.GetNumLocations()}")
+    check(
+        "Breakpoint at main",
+        bp.IsValid() and bp.GetNumLocations() > 0,
+        f"locations={bp.GetNumLocations()}",
+    )
     print()
 
     # ── 3. Launch ──────────────────────────────────────────────────────
@@ -63,8 +67,11 @@ def main():
     launch_info = lldb.SBLaunchInfo(None)
     error = lldb.SBError()
     process = target.Launch(launch_info, error)
-    check("Process launch", process.IsValid() and error.Success(),
-          str(error) if not error.Success() else "")
+    check(
+        "Process launch",
+        process.IsValid() and error.Success(),
+        str(error) if not error.Success() else "",
+    )
     if not process.IsValid():
         debugger.Terminate()
         print(json.dumps(RESULTS, indent=2))
@@ -72,12 +79,12 @@ def main():
 
     # Wait for stop
     from time import time as now
+
     deadline = now() + 10
     while process.GetState() != lldb.eStateStopped and now() < deadline:
         pass
 
-    check("Process stopped at breakpoint",
-          process.GetState() == lldb.eStateStopped)
+    check("Process stopped at breakpoint", process.GetState() == lldb.eStateStopped)
     print()
 
     # ── 4. Inspect thread / frame ──────────────────────────────────────
@@ -103,8 +110,7 @@ def main():
             print(f"   {var_name} = {var_value}")
 
     # C++ structs may show as 0 variables due to initialization timing
-    check("Variables accessible", vars_found >= 0,
-          f"Found {vars_found} variables")
+    check("Variables accessible", vars_found >= 0, f"Found {vars_found} variables")
     print()
 
     # ── 6. Step over ───────────────────────────────────────────────────
@@ -121,21 +127,33 @@ def main():
     # ── 7. Evaluate expression ─────────────────────────────────────────
     print("7. Evaluate expression...")
     result = frame2.EvaluateExpression("1 + 2")
-    check("Expression evaluation", result.IsValid() and str(result.GetError().Success()),
-          f"Error: {result.GetError()}")
-    check("Expression result correct",
-          result.GetValue() == "3" or "3" in str(result.GetValue()),
-          f"Got: {result.GetValue()}")
+    check(
+        "Expression evaluation",
+        result.IsValid() and str(result.GetError().Success()),
+        f"Error: {result.GetError()}",
+    )
+    check(
+        "Expression result correct",
+        result.GetValue() == "3" or "3" in str(result.GetValue()),
+        f"Got: {result.GetValue()}",
+    )
     print()
 
     # ── 8. Continue to exit ────────────────────────────────────────────
     print("8. Continue to exit...")
     process.Continue()
     deadline = now() + 10
-    while process.GetState() != lldb.eStateExited and process.GetState() != lldb.eStateStopped and now() < deadline:
+    while (
+        process.GetState() != lldb.eStateExited
+        and process.GetState() != lldb.eStateStopped
+        and now() < deadline
+    ):
         pass
-    check("Process exited", process.GetState() == lldb.eStateExited,
-          f"State={process.GetState()}, Exit={process.GetExitStatus()}")
+    check(
+        "Process exited",
+        process.GetState() == lldb.eStateExited,
+        f"State={process.GetState()}, Exit={process.GetExitStatus()}",
+    )
     print()
 
     # ── 9. Cleanup ─────────────────────────────────────────────────────

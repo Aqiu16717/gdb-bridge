@@ -35,6 +35,7 @@ import lldb  # type: ignore[import-not-found] # noqa: E402
 @dataclass
 class Location:
     """Code location."""
+
     file: str | None = None
     line: int | None = None
     function: str | None = None
@@ -44,6 +45,7 @@ class Location:
 @dataclass
 class VariableInfo:
     """Variable information."""
+
     name: str
     value: str
     type: str | None = None
@@ -53,6 +55,7 @@ class VariableInfo:
 @dataclass
 class FrameInfo:
     """Stack frame."""
+
     level: int
     function: str | None = None
     file: str | None = None
@@ -62,6 +65,7 @@ class FrameInfo:
 @dataclass
 class StopEvent:
     """Program stop event."""
+
     status: str = "stopped"
     reason: str = ""
     location: Location = field(default_factory=Location)
@@ -72,6 +76,7 @@ class StopEvent:
 @dataclass
 class BreakpointInfo:
     """Breakpoint information."""
+
     breakpoint_id: int
     location: str
     enabled: bool = True
@@ -105,6 +110,7 @@ class AgentDebugger:
             JSON-serializable dict with session info.
         """
         import uuid
+
         self.session_id = f"sess_{uuid.uuid4().hex[:8]}"
 
         self._debugger = lldb.SBDebugger.Create()
@@ -193,9 +199,7 @@ class AgentDebugger:
         Returns:
             JSON-serializable dict with breakpoints list.
         """
-        return _ok({
-            "breakpoints": [asdict(bp) for bp in self._breakpoints]
-        })
+        return _ok({"breakpoints": [asdict(bp) for bp in self._breakpoints]})
 
     # ── Execution control ────────────────────────────────────────────────
 
@@ -371,13 +375,15 @@ class AgentDebugger:
         for i in range(thread.GetNumFrames()):
             frame = thread.GetFrameAtIndex(i)
             loc = self._frame_to_location(frame)
-            frames.append({
-                "level": i,
-                "function": loc.function,
-                "file": loc.file,
-                "line": loc.line,
-                "address": loc.address,
-            })
+            frames.append(
+                {
+                    "level": i,
+                    "function": loc.function,
+                    "file": loc.file,
+                    "line": loc.line,
+                    "address": loc.address,
+                }
+            )
 
         return _ok({"frames": frames})
 
@@ -459,7 +465,9 @@ class AgentDebugger:
         file_spec = line_entry.GetFileSpec() if line_entry.IsValid() else None
 
         return Location(
-            file=f"{file_spec.GetDirectory()}/{file_spec.GetFilename()}" if file_spec and file_spec.IsValid() else None,
+            file=f"{file_spec.GetDirectory()}/{file_spec.GetFilename()}"
+            if file_spec and file_spec.IsValid()
+            else None,
             line=line_entry.GetLine() if line_entry.IsValid() else None,
             function=func,
             address=f"0x{frame.GetPC():x}",
@@ -530,6 +538,7 @@ def run_lldb_demo() -> None:
     # Ensure binary exists
     if not test_bin.exists():
         import subprocess
+
         print("Compiling test program...")
         test_c = Path(__file__).parent / "tests" / "simple_test.c"
         subprocess.run(
