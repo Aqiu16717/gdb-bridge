@@ -1,65 +1,71 @@
-# AGENTS.md — Multi-Agent Collaboration Guide for gdb-bridge
+# AGENTS.md — gdb-bridge 团队协作规范
 
-## Agent Team
+## 项目简介
 
-| Agent | Role | Domain |
-|-------|------|--------|
-| @py-arch | Python Architect | REST API, MCP, DebuggerAdapter, GDB/LLDB services |
-| @c-master | C Systems Engineer | ELF parser, DWARF index, core dump, demangle engine |
-| @qa-master | QA Engineer | Test strategy, fixtures, coverage, bug verification |
-| @devps-master | DevOps Engineer | Docker, CI/CD, deployment, infrastructure |
-| @architect | Technical Architect | API contracts, module boundaries, tech decisions |
-| @pm-lead | Product Manager | PRD, acceptance criteria, priorities |
-| @frontend | Frontend Engineer | Web UI (future), README |
-| @golang | Go Engineer | Concurrency/performance (future, on-call) |
+gdb-bridge 是一个面向 AI Agent 的生产级 C/C++ 调试中间件。
+通过 REST API 和 MCP 协议，让 AI Agent 能像人类工程师一样调试程序——
+设断点、单步执行、查看变量、分析崩溃现场。
 
-## Collaboration Rules
+## 团队成员
 
-1. **Respect domains** — Each agent owns their layer. @py-arch doesn't touch C engine. @c-master doesn't touch HTTP API.
-2. **DebuggerAdapter is the contract** — All 3 backends (GDB/LLDB/Mock) must implement all 18 abstract methods.
-3. **Tests gate merges** — @qa-master must sign off before merge. 125 Python + 56 C tests must pass.
-4. **CI runs on PR** — @devps-master manages 13-job pipeline (lint → test → docker → deploy).
-5. **API changes need @architect review** — OpenAPI spec is the source of truth.
-6. **Atomic commits** — One module per commit, clear messages, feature branches.
-7. **Update README after major changes** — @pm-lead enforces this.
-8. **No premature optimization** — Profile before optimizing, C engine is on-demand.
+| Agent | 角色 | 职责 |
+|-------|------|------|
+| @c-master | C 底层大师 | C 引擎（ELF/DWARF/Core dump/Demangle）|
+| @py-arch | Python 架构师 | Python 层、API、DebuggerAdapter |
+| @architect | 技术架构师 | 接口设计、模块边界、技术选型 |
+| @qa-master | QA 工程师 | 测试策略、回归测试、Bug 验收 |
+| @devps-master | DevOps 工程师 | CI/CD、Docker、部署 |
+| @pm-lead | 产品经理 | 需求定义、优先级、验收标准 |
+| @golang | Go 语言大师 | 高并发层（待命） |
+| @frontend-master | 前端大师 | Web UI（待命）、README 文档 |
 
-## Project Files Agent Should Know
+## 架构决策记录
 
-| File | Purpose |
-|------|---------|
-| `api/openapi.yaml` | REST API contract (source of truth) |
-| `src/gdb_bridge/services/debug_adapter.py` | Abstract interface (18 methods) |
-| `src/gdb_bridge/models/errors.py` | Error codes E001-E010 |
-| `src/gdb_bridge/core/session_manager.py` | Session lifecycle with TTL |
-| `src/gdb_bridge/engine/Makefile` | C engine build + test |
-| `poc/lldb_agent.py` | macOS LLDB PoC (zero config) |
-| `tests/integration/test_adapter_interface.py` | Parameterized adapter tests |
-| `pyproject.toml` | Python project config + pytest settings |
-| `.github/workflows/ci.yml` | CI pipeline (13 jobs) |
+| 决策 | 日期 | 结论 |
+|------|------|------|
+| 语言选型 | D1 | Python 3.11+ 为主，C 引擎为辅助（ctypes） |
+| 协议 | D1 | REST + MCP 双协议 |
+| 后端 | D1 | GDB + LLDB + Mock 三后端 |
+| C 引擎 | D1-P2 | ELF/DWARF/Core dump/Demangle，按需渐进 |
+| 远程调试 | P2 | gdbserver/lldb-server 透明代理 |
+| 并发层 | 远期 | Go（等性能数据驱动） |
 
-## Commit Conventions
+## 工作流
 
-```
-<type>: <description>
-# e.g.
-feat: Add watchpoint support to DebuggerAdapter
-fix: Remove os.chdir() concurrency bug
-test: Add parameterized thread tests
-docs: Update README with MCP dual-protocol
-```
+1. **需求 → Spec**: @pm-lead 定义 PRD + 验收标准
+2. **Spec → 设计**: @architect 定义接口（OpenAPI / ABC）
+3. **设计 → 实现**: @py-arch（Python）/ @c-master（C）并行开发
+4. **实现 → 测试**: @qa-master 参数化测试 + 回归
+5. **测试 → 部署**: @devps-master CI/CD + Docker
 
-Types: `feat`, `fix`, `test`, `docs`, `refactor`, `chore`
+## 代码审查规范
 
-## Quick Reference
+- 每个 PR 至少由 2 个 Agent 审查
+- Python 代码: mypy strict + ruff，不允许未处理的异常
+- C 代码: `-Wall -Wextra -Werror`，通过 uintptr_t 处理对齐
+- 测试: P0 功能必须有自动化测试覆盖
+
+## 分支策略
+
+- `main` — 稳定分支，CI 13 jobs 全绿
+- Feature branches: `feature/<description>`
+- PR: squash merge 到 main
+
+## 快速链接
+
+- 仓库: https://github.com/Aqiu16717/gdb-bridge
+- CI: GitHub Actions (13 jobs)
+- API 文档: `http://localhost:8080/docs` (启动后)
+
+## 测试
 
 ```bash
-# Python tests
-pytest -m "not gdb" -v --ignore=tests/fixtures
+# Python (125 tests)
+pytest -m "not gdb" -v
 
-# C engine tests
-make -C src/gdb_bridge/engine test
+# C Engine (56 tests)
+make -f src/gdb_bridge/engine/Makefile test test_dwarf test_core test_demangle
 
-# All tests
-pytest -m "not gdb" -v --ignore=tests/fixtures && make -C src/gdb_bridge/engine test
+# 全量 (181 tests)
+pytest -m "not gdb" -v && make -f src/gdb_bridge/engine/Makefile test test_dwarf test_core test_demangle
 ```
