@@ -35,6 +35,10 @@ struct dwarf_index {
     size_t           debug_line_size;
     const char      *debug_str;     /* .debug_str raw data */
     size_t           debug_str_size;
+    const char      *debug_str_offsets; /* .debug_str_offsets (DWARF 5) */
+    size_t           debug_str_offsets_size;
+    const char      *debug_line_str;   /* .debug_line_str (DWARF 5) */
+    size_t           debug_line_str_size;
 
     /* Cached CU count */
     uint32_t         cu_count;
@@ -162,10 +166,25 @@ static int parse_die_attrs(
         case DW_FORM_strp:
             value_size = 4;
             break;
+        case DW_FORM_strx:  /* DWARF 5: ULEB128 index into .debug_str_offsets */
+        case DW_FORM_addrx: /* DWARF 5: ULEB128 index into .debug_addr */
+            {
+                uint64_t dummy;
+                int n = decode_uleb128(p, data_end, &dummy);
+                if (n <= 0) return -1;
+                value_size = (size_t)n;
+            }
+            break;
+        case DW_FORM_line_strp:  /* DWARF 5: 4-byte offset into .debug_line_str */
+            value_size = 4;
+            break;
         case DW_FORM_data8:
         case DW_FORM_ref8:
         case DW_FORM_ref_addr:
             value_size = 8;
+            break;
+        case DW_FORM_data16:  /* DWARF 5: 16-byte value */
+            value_size = 16;
             break;
         case DW_FORM_string: {
             /* Null-terminated string — scan for terminator */
@@ -655,10 +674,12 @@ dwarf_index_t *dwarf_index_open(elf_handle_t *elf) {
     } \
 } while(0)
 
-    LOAD_SECTION(".debug_info",   debug_info,   debug_info_size);
-    LOAD_SECTION(".debug_abbrev", debug_abbrev, debug_abbrev_size);
-    LOAD_SECTION(".debug_line",   debug_line,   debug_line_size);
-    LOAD_SECTION(".debug_str",    debug_str,    debug_str_size);
+    LOAD_SECTION(".debug_info",         debug_info,         debug_info_size);
+    LOAD_SECTION(".debug_abbrev",       debug_abbrev,       debug_abbrev_size);
+    LOAD_SECTION(".debug_line",         debug_line,         debug_line_size);
+    LOAD_SECTION(".debug_str",          debug_str,          debug_str_size);
+    LOAD_SECTION(".debug_str_offsets",  debug_str_offsets,  debug_str_offsets_size);
+    LOAD_SECTION(".debug_line_str",     debug_line_str,     debug_line_str_size);
 
 #undef LOAD_SECTION
 
@@ -708,7 +729,10 @@ int dwarf_lookup_function(dwarf_index_t *idx, const char *name, dwarf_func_t *ou
     const char *end = p + idx->debug_info_size;
 
     while (p + 11 <= end) {
-        /* Read CU header: length (4) + version (2) + abbrev_offset (4) + address_size (1) */
+        /* Read CU header:
+         * DWARF 4: length(4) + version=4(2) + abbrev_offset(4) + addr_size(1) = 11
+         * DWARF 5: length(4) + version=5(2) + unit_type(1) + addr_size(1) + abbrev_offset(4) = 12
+         */
         uint32_t cu_length;
         memcpy(&cu_length, p, 4);
         if (cu_length == 0 || cu_length == 0xffffffff) break;
@@ -722,10 +746,21 @@ int dwarf_lookup_function(dwarf_index_t *idx, const char *name, dwarf_func_t *ou
         p += 2;
 
         uint32_t abbrev_offset;
-        memcpy(&abbrev_offset, p, 4);
-        p += 4;
+        if (version >= 5) {
+            /* DWARF 5: skip unit_type (1 byte) */
+            p++;  /* unit_type */
+        }
 
         uint8_t addr_size = (uint8_t)*p++;
+
+        if (version >= 5) {
+            /* abbrev_offset is after address_size in DWARF 5 */
+            memcpy(&abbrev_offset, p, 4);
+            p += 4;
+        } else {
+            memcpy(&abbrev_offset, p, 4);
+            p += 4;
+        }
 
         (void)version;
         (void)addr_size;
