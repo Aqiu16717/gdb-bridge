@@ -728,7 +728,7 @@ int dwarf_lookup_function(dwarf_index_t *idx, const char *name, dwarf_func_t *ou
     const char *p = idx->debug_info;
     const char *end = p + idx->debug_info_size;
 
-    while (p + 11 <= end) {
+    while (p + 12 <= end) {
         /* Read CU header:
          * DWARF 4: length(4) + version=4(2) + abbrev_offset(4) + addr_size(1) = 11
          * DWARF 5: length(4) + version=5(2) + unit_type(1) + addr_size(1) + abbrev_offset(4) = 12
@@ -746,20 +746,19 @@ int dwarf_lookup_function(dwarf_index_t *idx, const char *name, dwarf_func_t *ou
         p += 2;
 
         uint32_t abbrev_offset;
-        if (version >= 5) {
-            /* DWARF 5: skip unit_type (1 byte) */
-            p++;  /* unit_type */
-        }
-
-        uint8_t addr_size = (uint8_t)*p++;
+        uint8_t addr_size;
 
         if (version >= 5) {
-            /* abbrev_offset is after address_size in DWARF 5 */
+            /* DWARF 5: unit_type(1) + address_size(1) + abbrev_offset(4) */
+            p++;  /* skip unit_type */
+            addr_size = (uint8_t)*p++;
             memcpy(&abbrev_offset, p, 4);
             p += 4;
         } else {
+            /* DWARF 2-4: abbrev_offset(4) + address_size(1) */
             memcpy(&abbrev_offset, p, 4);
             p += 4;
+            addr_size = (uint8_t)*p++;
         }
 
         (void)version;
