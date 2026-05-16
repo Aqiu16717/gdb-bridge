@@ -124,7 +124,7 @@ def create_debug_router(session_manager: SessionManager) -> APIRouter:
                 type=result.type,
             )
         except EvaluationError:
-            raise SessionNotFoundError(session_id, message=f"Variable '{{name}}' not found") from None
+            raise SessionNotFoundError(session_id, message=f"Variable '{name}' not found") from None
 
     @debug_router.get(
         "/sessions/{session_id}/frames",

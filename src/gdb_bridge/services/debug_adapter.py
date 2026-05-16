@@ -208,8 +208,6 @@ class DebuggerAdapter(ABC):
         """
         ...
 
-        ...
-
 
     @abstractmethod
     async def get_registers(self) -> dict[str, str]:
