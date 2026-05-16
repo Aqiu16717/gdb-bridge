@@ -36,3 +36,13 @@ dist/
 *.egg-info/
 *.dSYM/
 *.dSYM/**
+
+# Compiled test binaries (build from source)
+tests/fixtures/*_test
+tests/fixtures/**/lib*.dylib
+tests/fixtures/**/lib*.so
+tests/fixtures/**/*_test
+tests/fixtures/**/*.dSYM/
+
+# C engine build artifacts
+src/gdb_bridge/engine/build/
