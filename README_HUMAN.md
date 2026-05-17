@@ -109,8 +109,3 @@ Claude 自动拥有 15 个调试工具，可以直接帮你调程序。
 - ✅ 分析生产环境 core dump
 - ✅ 远程调试服务器进程
 - ✅ 给 AI 工具链加调试能力
-
----
-
-- 📖 技术细节: [README.md](README.md)
-- 🔧 AI Agent 参考: [CLAUDE.md](CLAUDE.md)
