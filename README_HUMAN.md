@@ -97,8 +97,6 @@ Claude 自动获得 15 个调试工具（10 核心 + 5 专家）。
 
 ---
 
-## 链接
-
 - 📖 [README.md](README.md) — 技术文档
 - 🔧 [CLAUDE.md](CLAUDE.md) — AI 开发指南
 - 🐛 [GitHub Issues](https://github.com/Aqiu16717/gdb-bridge/issues)
