@@ -6,121 +6,99 @@
 
 ## 这玩意儿能干嘛？
 
-你写了个 C++ 程序，崩了。正常流程是：
-1. 开 GDB
-2. 设断点
-3. 一步步跟
-4. 打印变量
-5. 分析崩溃
+你写了个 C++ 程序，崩了。正常流程是手动开 GDB、设断点、一步步跟。这需要你知道调试器怎么用。
 
-这需要你知道 GDB 怎么用、怎么读寄存器、怎么看调用栈。
-
-**有了 gdb-bridge，你的 AI 助手（Claude、Copilot）也能干这些事**。
-你跟它说"我的程序崩了"，它自己就去找问题——设断点、单步、看变量、定位崩溃行。
+**有了 gdb-bridge，你的 AI 助手（Claude、Copilot）也能干这些事**。跟它说"我的程序崩了"，它自己就去找问题。
 
 ---
 
 ## 30 秒体验
 
 ```bash
-# 1. 安装
+# 安装
+cd /path/to/gdb-bridge
 pip install -e '.[dev]'
 
-# 2. 启动（macOS 零配置）
+# macOS — LLDB 原生，零配置
 /usr/bin/python3 poc/lldb_agent.py
 
-# 3. 或者启动 API 服务
-uvicorn gdb_bridge.main:app
-# 打开 http://localhost:8000/docs 就能看到所有接口
-```
+# 任何平台 — Mock 演示（无需调试器）
+python3 poc/debug_agent_mock.py
 
-不需要装 GDB，不需要配环境——macOS 上直接用 LLDB。
+# HTTP API + Swagger UI
+uvicorn gdb_bridge.main:app --reload
+# → http://localhost:8080/docs
+```
 
 ---
 
 ## AI Agent 能做什么
 
-通过 gdb-bridge，AI 可以：
-
-| 能力 | 怎么用 |
-|------|--------|
-| 🎯 **设断点** | Agent 说"在第 42 行设断点" → 自动命中 |
-| 👣 **单步执行** | "走一步" / "跳进这个函数" / "跳出" |
-| 🔍 **看变量** | "x 的值是多少" → `{name: "x", value: "42"}` |
-| 📚 **看调用栈** | "现在在哪个函数里" → 完整的调用链 |
-| 💥 **分析崩溃** | 加载 core dump，自动回溯崩溃前的调用栈 |
-| 🔗 **远程调试** | 连接远程服务器上的 gdbserver |
-| 🧵 **多线程** | 列出所有线程、切换到指定线程 |
-| 🏷️ **符号翻译** | `_Z3fooi` 自动变成 `foo(int)` |
+| 能力 | Agent 怎么用 |
+|------|-------------|
+| 🎯 设断点 | "在第 42 行设断点" → 自动命中 |
+| 👣 单步执行 | "走一步" / "跳进函数" / "跳出" |
+| 🔍 看变量 | "x 是多少" → `{name: "x", value: 42, type: "int"}` |
+| 📚 调用栈 | "现在在哪个函数" → 完整调用链 |
+| 🧵 多线程 | 列出线程、切换线程 |
+| 💾 数据断点 | "监视这个变量什么时候被修改" |
+| 📊 寄存器 | 查看 CPU 寄存器 |
+| 💥 崩溃分析 | 加载 core dump → 自动回溯 |
+| 🔗 远程调试 | 连接 gdbserver / lldb-server |
+| 🏷️ 符号翻译 | `_Z3fooi` → `foo(int)` |
 
 ---
 
 ## 两种接入方式
 
-### REST API（任何 HTTP 客户端都能用）
+### REST API — 任何 HTTP 客户端
 
 ```bash
-# 创建调试会话
-curl -X POST http://localhost:8000/sessions \
-  -H "Content-Type: application/json" \
-  -d '{"program": "./my_program"}'
+curl -X POST http://localhost:8080/sessions \
+  -d '{"target": {"type": "file", "path": "./my_program"}}'
 
-# 设断点
-curl -X POST http://localhost:8000/sessions/abc123/breakpoints \
-  -H "Content-Type: application/json" \
+curl -X POST http://localhost:8080/sessions/{id}/breakpoints \
   -d '{"location": "main"}'
 
-# 运行到断点
-curl -X POST http://localhost:8000/sessions/abc123/continue
+curl -X POST http://localhost:8080/sessions/{id}/continue
 
-# 查看变量
-curl http://localhost:8000/sessions/abc123/variables/x
+curl http://localhost:8080/sessions/{id}/variables/x
 ```
 
-### MCP 协议（Claude 桌面版原生支持）
+16 个端点，`/docs` 打开 Swagger UI。
 
-在 Claude Desktop 配置里加上：
+### MCP 协议 — Claude Desktop 原生
 
 ```json
-{
-  "mcpServers": {
-    "gdb-bridge": {
-      "command": "python3",
-      "args": ["-m", "gdb_bridge.mcp.server"]
-    }
-  }
-}
+{ "mcpServers": { "gdb-bridge": { "command": "python3", "args": ["-m", "gdb_bridge.mcp.server"] } } }
 ```
 
-然后 Claude 就自动有了 15 个调试工具，可以直接帮你调程序。
+Claude 自动获得 15 个调试工具（10 核心 + 5 专家）。
 
 ---
 
 ## 什么时候你需要这个？
 
-- ✅ 你的程序崩了，不想手动 GDB
-- ✅ 想让 AI 帮你定位 bug，不只是写代码
-- ✅ 调试复杂的 C++ 模板代码（名字都被 mangle 了）
-- ✅ 分析生产环境的 core dump
-- ✅ 远程调试服务器上的进程
-- ✅ 给你的 AI 工具链加上调试能力
+- ✅ 程序崩了，不想手动 GDB/LLDB
+- ✅ 想让 AI 定位 bug，不只是写代码
+- ✅ 调试复杂 C++ 模板代码
+- ✅ 分析生产环境 core dump
+- ✅ 远程调试服务器进程
 
 ---
 
-## 当前能力一览
+## 当前能力
 
-- **181 个测试**，全部通过
-- 支持 **GDB + LLDB** 双后端
-- 支持 **REST API + MCP 协议** 双入口
-- **macOS 零配置**（LLDB 系统自带）
-- 自研 **C 引擎**：ELF 解析、DWARF 符号、Core dump、C++ 名字翻译
-- **Docker 支持**：一行命令启动完整环境
+- **181 个测试** (125 Python + 56 C)
+- **GDB + LLDB** 双后端，macOS 零配置
+- **REST (16) + MCP (15)** 双协议
+- 自研 **C 引擎**：ELF + DWARF + Core dump + 符号解码 (56 C tests)
+- **Docker** + **13 CI jobs** (Linux + macOS)
 
 ---
 
-## 下一步
+## 链接
 
-- 📖 技术细节看 [README.md](README.md)
-- 🔧 AI Agent 开发看 [CLAUDE.md](CLAUDE.md)
-- 👥 团队协作看 [AGENTS.md](AGENTS.md)
-- 🐛 有问题提 [Issue](https://github.com/Aqiu16717/gdb-bridge/issues)
+- 📖 [README.md](README.md) — 技术文档
+- 🔧 [CLAUDE.md](CLAUDE.md) — AI 开发指南
+- 🐛 [GitHub Issues](https://github.com/Aqiu16717/gdb-bridge/issues)
