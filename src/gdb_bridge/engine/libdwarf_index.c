@@ -142,7 +142,7 @@ static int parse_die_attrs(
     void *user_data)
 {
     const char *p = data;
-    (void)idx;
+    /* idx used for DWARF 5 DW_FORM_strx/line_strp resolution */
 
     for (uint8_t i = 0; i < abbrev->attr_count; i++) {
         uint64_t form = abbrev->attrs[i].form;
@@ -163,10 +163,43 @@ static int parse_die_attrs(
         case DW_FORM_data4:
         case DW_FORM_ref4:
         case DW_FORM_sec_offset:
-        case DW_FORM_strp:
             value_size = 4;
             break;
-        case DW_FORM_strx:  /* DWARF 5: ULEB128 index into .debug_str_offsets */
+        case DW_FORM_strp:  /* 4-byte offset into .debug_str — resolve to string */
+            if (p + 4 > data_end) return -1;
+            {
+                uint32_t str_off;
+                memcpy(&str_off, p, 4);
+                value_size = 4;  /* keep form size for p advancement */
+                if (idx->debug_str && str_off < idx->debug_str_size) {
+                    value_ptr = idx->debug_str + str_off;
+                    /* Note: value_size stays 4 — callback sees string via value_ptr */
+                }
+            }
+            break;
+        case DW_FORM_strx:  /* DWARF 5: ULEB128 index → .debug_str_offsets → .debug_str */
+            {
+                uint64_t strx_idx;
+                int n = decode_uleb128(p, data_end, &strx_idx);
+                if (n <= 0) return -1;
+                value_size = (size_t)n;
+                /* Resolve indirect string via .debug_str_offsets lookup table */
+                if (idx->debug_str_offsets && idx->debug_str
+                    && idx->debug_str_offsets_size >= 8) {
+                    /* .debug_str_offsets has an 8-byte header (length+version+padding),
+                     * followed by 4-byte offset entries. */
+                    size_t off_pos = 8 + (size_t)strx_idx * 4;
+                    if (off_pos + 4 <= idx->debug_str_offsets_size) {
+                        uint32_t str_off;
+                        memcpy(&str_off, idx->debug_str_offsets + off_pos, 4);
+                        if (str_off < idx->debug_str_size) {
+                            value_ptr = idx->debug_str + str_off;
+                            /* value_size stays as ULEB128 byte count for p advancement */
+                        }
+                    }
+                }
+            }
+            break;
         case DW_FORM_addrx: /* DWARF 5: ULEB128 index into .debug_addr */
             {
                 uint64_t dummy;
@@ -175,8 +208,18 @@ static int parse_die_attrs(
                 value_size = (size_t)n;
             }
             break;
-        case DW_FORM_line_strp:  /* DWARF 5: 4-byte offset into .debug_line_str */
-            value_size = 4;
+        case DW_FORM_line_strp:  /* DWARF 5: 4-byte offset → .debug_line_str */
+            if (p + 4 > data_end) return -1;
+            {
+                uint32_t line_str_off;
+                memcpy(&line_str_off, p, 4);
+                value_size = 4;
+                /* Resolve to actual string in .debug_line_str */
+                if (idx->debug_line_str && line_str_off < idx->debug_line_str_size) {
+                    value_ptr = idx->debug_line_str + line_str_off;
+                    /* value_size stays 4 for p advancement */
+                }
+            }
             break;
         case DW_FORM_data8:
         case DW_FORM_ref8:
@@ -195,7 +238,8 @@ static int parse_die_attrs(
             break;
         }
         case DW_FORM_flag_present:
-            value_size = 0;  /* implicit true, no data */
+        case DW_FORM_implicit_const:  /* DWARF 5: value in abbrev table */
+            value_size = 0;  /* no data in DIE stream */
             value_ptr = NULL;
             break;
         case DW_FORM_udata:
@@ -598,7 +642,6 @@ static int walk_die_tree(
         /* Read abbreviation code (ULEB128) */
         uint64_t abbr_code;
         int n = decode_uleb128(p, cu_end, &abbr_code);
-        if (n <= 0) return -1;
         p += n;
 
         if (abbr_code == 0) {
@@ -618,6 +661,8 @@ static int walk_die_tree(
         if (!abbrev) {
             *p_ptr = p;
             return -2;  /* unknown abbrev code */
+        }
+        if (abbrev->tag == DW_TAG_subprogram) {
         }
 
         /* Parse attributes of this DIE, invoking callback */
